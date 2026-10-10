@@ -22,9 +22,10 @@ while read -r local_ref local_sha remote_ref _remote_sha; do
 
   if is_protected_branch "$target"; then
     red "✖ Pushing directly to '$target' is not allowed."
-    dim "  Push a feature branch and open a pull request instead:"
+    dim "  Push a feature branch and open a pull request into '$INTEGRATION_BRANCH' instead:"
     dim "    git switch -c feature/my-change"
     dim "    git push -u origin feature/my-change"
+    dim "    gh pr create --base $INTEGRATION_BRANCH"
     exit 1
   fi
 

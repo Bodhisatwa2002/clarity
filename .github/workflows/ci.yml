@@ -2,8 +2,10 @@ name: CI
 
 on:
   pull_request:
+    # 'edited' re-runs the checks when a PR's title or base branch changes.
+    types: [opened, synchronize, reopened, edited]
   push:
-    branches: [main]
+    branches: [main, staging]
   workflow_dispatch:
 
 # A new push to the same PR/branch cancels the run already in progress.
@@ -18,7 +20,7 @@ env:
   FLUTTER_VERSION: "3.47.7"
 
 jobs:
-  # ── Repo rules: branch name, PR title, every commit message ────────────────
+  # ── Repo rules: branch flow, PR title, every commit message ────────────────
   conventions:
     name: Branch & commit conventions
     if: github.event_name == 'pull_request'
@@ -29,14 +31,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Branch name
+      - name: Branch name and flow (work → staging → main)
         env:
-          BRANCH: ${{ github.head_ref }}
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
         run: |
           source scripts/git/rules.sh
-          check_branch_name "$BRANCH"
+          check_pr_flow "$BASE" "$HEAD"
 
-      - name: PR title (Conventional Commits — it becomes the squash commit)
+      - name: PR title (Conventional Commits — it becomes the merge commit)
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: |
