@@ -1,0 +1,33 @@
+name: Guard main
+
+# Backstop for when branch protection is not (yet) enabled on GitHub: any push
+# to main that did not come from a merged pull request fails loudly and shows
+# up red in the commit history. The real block is the ruleset applied by
+# scripts/protect-main.sh — this workflow only detects, it cannot undo a push.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  guard:
+    name: Push came from a pull request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check the pushed commit belongs to a merged PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          prs=$(gh api "repos/$REPO/commits/$SHA/pulls" --jq '[.[] | select(.merged_at != null)] | length')
+          if [[ "$prs" -eq 0 ]]; then
+            echo "::error::Commit $SHA was pushed directly to main without a pull request."
+            exit 1
+          fi
+          echo "✔ $SHA came from a merged pull request."

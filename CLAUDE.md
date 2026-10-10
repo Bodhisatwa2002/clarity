@@ -127,6 +127,19 @@ flutter pub get             # Fetch dependencies
 
 To launch an iOS simulator manually: `open -a Simulator`.
 
+## Git workflow & CI (see `CONTRIBUTING.md`)
+
+- **Never commit or push to `main`.** Hooks block it locally; GitHub rulesets
+  block it remotely. Work on a `<type>/<kebab-name>` branch (`feature/`,
+  `fix/`, `chore/`, `refactor/`, `docs/`, `test/`, `ci/`, `perf/`, `build/`,
+  `style/`, `hotfix/`, `bugfix/`, `release/`) and open a PR.
+- **Commit messages and PR titles use Conventional Commits:**
+  `feat(map): cluster nearby pins`. PRs are squash-merged.
+- `make setup` once per clone (installs `.githooks/`). `make check` runs exactly
+  what CI runs: lockfile, `dart format`, `flutter analyze --fatal-infos`, tests.
+- Rules live in `scripts/git/rules.sh` (shared by hooks and
+  `.github/workflows/ci.yml`). `make protect` applies `.github/rulesets/`.
+
 ## Working agreements
 
 - **Build incrementally.** Add one screen/feature, run it, confirm it works,

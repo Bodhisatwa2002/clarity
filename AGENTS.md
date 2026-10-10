@@ -53,7 +53,11 @@ Launch a simulator with `open -a Simulator` if none is running.
   only when the user taps "Find friends."
 - Keep **`place`** and **`visit`** as distinct models from the start.
 
-## Commits
+## Commits & branches (full detail: `CONTRIBUTING.md`)
 
-- Write clear, present-tense commit messages describing the change.
-- Run `flutter analyze` and `flutter test` before committing.
+- Never commit or push to `main` — hooks and GitHub rulesets reject it. Work on
+  a `<type>/<kebab-name>` branch (`feature/…`, `fix/…`, `chore/…`, …) and open a PR.
+- Commit messages and PR titles follow Conventional Commits:
+  `feat(map): cluster nearby pins`.
+- Run `make setup` once per clone; run `make check` (format, analyze, test)
+  before pushing — it's exactly what CI runs.

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Warns (does not block) when a newly checked-out branch has a non-standard
+# name, so it can be renamed before the first push rejects it.
+set -uo pipefail
+
+# $3 == 1 means a branch checkout (not a file checkout).
+[[ "${3:-0}" == "1" ]] || exit 0
+
+root="$(git rev-parse --show-toplevel)"
+source "$root/scripts/git/rules.sh"
+
+branch="$(git symbolic-ref --short HEAD 2>/dev/null)" || exit 0
+is_protected_branch "$branch" && exit 0
+
+if ! [[ "$branch" =~ $BRANCH_PATTERN ]]; then
+  check_branch_name "$branch" 2>&1 | sed 's/✖/⚠/' >&2
+  dim "  (warning only — the push will be rejected until the branch is renamed)"
+fi
+exit 0

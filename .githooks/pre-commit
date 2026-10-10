@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Blocks commits on protected branches and commits with unformatted Dart code.
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+source "$root/scripts/git/rules.sh"
+export PATH="/opt/homebrew/bin:$PATH"
+
+branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo "")"
+
+if [[ -n "$branch" ]] && is_protected_branch "$branch"; then
+  red "✖ Direct commits to '$branch' are not allowed."
+  dim "  Create a branch first, e.g.:  git switch -c feature/my-change"
+  dim "  Your staged changes come with you."
+  exit 1
+fi
+
+# Only check the Dart files in this commit, so it stays fast.
+staged=()
+while IFS= read -r f; do staged+=("$f"); done < <(git diff --cached --name-only --diff-filter=ACMR -- '*.dart')
+if ((${#staged[@]})); then
+  if ! out="$(dart format --output=none --set-exit-if-changed "${staged[@]}" 2>/dev/null)"; then
+    red "✖ Some staged Dart files are not formatted:"
+    grep -E '^Changed' <<<"$out" | sed 's/^/  /' >&2 || true
+    dim "  Fix with: dart format lib test && git add -u"
+    exit 1
+  fi
+fi
