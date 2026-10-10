@@ -6,7 +6,8 @@
     "ref_name": {
       "include": ["~ALL"],
       "exclude": [
-        "~DEFAULT_BRANCH",
+        "refs/heads/main",
+        "refs/heads/staging",
         "refs/heads/feature/**",
         "refs/heads/fix/**",
         "refs/heads/hotfix/**",

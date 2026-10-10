@@ -97,7 +97,8 @@ yet.** The map is an illustration (`MapArtView`) until Google Maps is wired.
 - Pushing, opening PRs, or anything else that talks to GitHub.
 
 ### 🚫 Never
-- Commit or push to `main` (or `master` / `develop`). Hooks and GitHub rulesets reject it.
+- Commit or push to `main` or `staging` (or `master` / `develop`). Hooks and GitHub rulesets reject it.
+- Open a PR into `main` from anything but `staging` or a `hotfix/…` branch, or squash-merge `staging` into `main`.
 - Use `--no-verify`, force-push shared branches, or skip/disable tests or lints to get green.
 - Hardcode colors, font families or text styles in widgets.
 - Store or upload contact numbers of people who aren't users (§8).
@@ -230,18 +231,32 @@ no `print` (the lint enforces it).
 
 ## 7. Git, branches, commits, PRs
 
-`main` is protected. Every change reaches it through a pull request with green
-CI, squash-merged. Full human guide: `CONTRIBUTING.md`. The rules are defined
-once in `scripts/git/rules.sh` and shared by the hooks and CI.
+Two protected long-lived branches; every change lands through a PR with green
+CI. Full human guide: `CONTRIBUTING.md`. The rules are defined once in
+`scripts/git/rules.sh` and shared by the hooks and CI.
+
+| Branch    | Role                                   | PRs come from                       | Merge with              |
+| --------- | -------------------------------------- | ----------------------------------- | ----------------------- |
+| `staging` | integration/testing — **default branch** | work branches; `main` (back-merge)  | **Squash and merge**    |
+| `main`    | production                             | `staging` (release); `hotfix/…`     | **Create a merge commit** (staging); squash (hotfix) |
+
+```
+feature/… fix/… ──squash──▶ staging ──merge commit──▶ main
+hotfix/… ──squash──▶ main ──back-merge PR──▶ staging
+```
+
+Never squash `staging` into `main`: it rewrites history and every later release
+PR conflicts. After any hotfix, open the `main → staging` back-merge PR.
 
 **Branches** — `<type>/<lowercase-kebab-description>`:
 `feature/` · `fix/` · `hotfix/` · `bugfix/` · `chore/` · `docs/` · `refactor/` ·
-`test/` · `ci/` · `perf/` · `build/` · `style/` · `release/`
+`test/` · `ci/` · `perf/` · `build/` · `style/` · `release/` (bots' `dependabot/…` branches are exempt)
 
 ```bash
-git switch main && git pull --ff-only
-git switch -c feature/contact-sync      # ✅
-# ❌ main · my-branch · Feature/Contact_Sync · feature/ContactSync
+git switch staging && git pull --ff-only
+git switch -c feature/contact-sync      # ✅ always branch from staging (hotfix/… from main)
+gh pr create --base staging --fill
+# ❌ main · staging · my-branch · Feature/Contact_Sync · feature/ContactSync
 ```
 
 **Commits** — [Conventional Commits](https://www.conventionalcommits.org),
@@ -264,18 +279,18 @@ Types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci` `chore`
 
 | Gate                            | Rule                                                         |
 | ------------------------------- | ------------------------------------------------------------ |
-| `pre-commit` hook               | no commits on `main`; staged `.dart` files must be formatted |
+| `pre-commit` hook               | no commits on `main`/`staging`; staged `.dart` files must be formatted |
 | `commit-msg` hook               | Conventional Commits subject                                 |
-| `pre-push` hook                 | no push to `main`; valid branch name; full `make check`      |
-| CI (`.github/workflows/ci.yml`) | branch name, PR title, every commit message, lockfile, format, analyze, tests + coverage, iOS no-codesign build → one `CI passed` check |
-| GitHub rulesets                 | PR required, `CI passed` green and up to date, linear history, no force-push or deletion, branch-name prefixes |
+| `pre-push` hook                 | no push to `main`/`staging`; valid branch name; full `make check` |
+| CI (`.github/workflows/ci.yml`) | PR direction (work → staging → main), branch name, PR title, every commit message, lockfile, format, analyze, tests + coverage, iOS no-codesign build → one `CI passed` check |
+| GitHub rulesets                 | PR required on `main` and `staging`, `CI passed` green (staging: also up to date), no force-push or deletion, branch-name prefixes |
 
 If a hook rejects you, **fix the cause**: rename the branch
 (`git branch -m feature/…`), reword the commit (`git commit --amend`), or run
 `dart format lib test`. Never bypass.
 
 **Pull requests** — the title is a Conventional Commit (it becomes the squash
-commit on `main`). Fill in `.github/pull_request_template.md`: what and why,
+or merge commit). Release PRs are titled `chore(release): <version>`. Fill in `.github/pull_request_template.md`: what and why,
 screenshots for UI changes, the checklist. Keep each PR to one feature or fix.
 
 ---
