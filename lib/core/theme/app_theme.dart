@@ -1,47 +1,39 @@
 import 'package:flutter/material.dart';
 
-/// Central place for the app's colors and theme.
-/// Tweak these as the brand/design settles.
-class AppColors {
-  static const Color primary = Color(0xFF1F6FEB); // map-pin blue
-  static const Color background = Color(0xFFFAFAFA);
-  static const Color surface = Colors.white;
-  static const Color textDark = Color(0xFF1A1A1A);
-  static const Color textMuted = Color(0xFF6B7280);
+import 'app_colors.dart';
+import 'app_text.dart';
 
-  // Category colors used to color-code pins (food, cafe, stay, trek, etc.)
-  static const Color catFood = Color(0xFFEF4444);
-  static const Color catCafe = Color(0xFFF59E0B);
-  static const Color catStay = Color(0xFF8B5CF6);
-  static const Color catTrek = Color(0xFF10B981);
-  static const Color catViewpoint = Color(0xFF3B82F6);
-  static const Color catOther = Color(0xFF6B7280);
-}
+export 'app_colors.dart';
+export 'app_text.dart';
 
-class AppTheme {
+/// App-wide [ThemeData]. Most styling lives in the widgets themselves
+/// (the design is highly custom); this sets the defaults they fall back to.
+abstract final class AppTheme {
   static ThemeData get light {
     final base = ThemeData(
       useMaterial3: true,
+      fontFamily: AppText.sansFamily,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
+        seedColor: AppColors.blue,
+        primary: AppColors.blue,
         brightness: Brightness.light,
       ),
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: AppColors.white,
+      splashFactory: NoSplash.splashFactory,
+      highlightColor: Colors.transparent,
     );
 
     return base.copyWith(
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textDark,
-        elevation: 0,
-        centerTitle: true,
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: AppColors.blue,
+        selectionColor: AppColors.tintStrong,
+        selectionHandleColor: AppColors.blue,
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
-        labelTextStyle: WidgetStateProperty.all(
-          const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-        ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.ink,
+        contentTextStyle: AppText.sans(13, weight: FontWeight.w600, color: AppColors.white),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }

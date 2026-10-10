@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A new push to the same PR/branch cancels the run already in progress.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: "3.47.7"
+
+jobs:
+  # ── Repo rules: branch name, PR title, every commit message ────────────────
+  conventions:
+    name: Branch & commit conventions
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Branch name
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          source scripts/git/rules.sh
+          check_branch_name "$BRANCH"
+
+      - name: PR title (Conventional Commits — it becomes the squash commit)
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          source scripts/git/rules.sh
+          check_commit_subject "$TITLE"
+
+      - name: Commit messages
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          source scripts/git/rules.sh
+          failed=0
+          while IFS= read -r subject; do
+            check_commit_subject "$subject" || failed=1
+          done < <(git log --format=%s "$BASE..$HEAD")
+          exit $failed
+
+  # ── Code quality: format, analyze, test ────────────────────────────────────
+  quality:
+    name: Format, analyze & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies (lockfile must be committed and current)
+        run: flutter pub get --enforce-lockfile
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos --fatal-warnings
+
+      - name: Test
+        run: flutter test --coverage --reporter=github
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # ── iOS build: proves the app compiles for device (no signing) ─────────────
+  # macOS runners bill at 10× Linux minutes on private repos, so this only runs
+  # once the cheap checks pass.
+  ios-build:
+    name: iOS build (no codesign)
+    needs: quality
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build iOS
+        run: flutter build ios --release --no-codesign
+
+  # ── Single required check for branch protection ────────────────────────────
+  # Branch protection requires only this job, so adding/renaming jobs above
+  # never needs a settings change on GitHub.
+  ci-passed:
+    name: CI passed
+    if: always()
+    needs: [conventions, quality, ios-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All required jobs succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for r in $RESULTS; do
+            # 'skipped' is fine: conventions is skipped on push to main.
+            [[ "$r" == "success" || "$r" == "skipped" ]] || exit 1
+          done

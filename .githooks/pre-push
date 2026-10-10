@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Blocks pushes to protected branches, rejects badly named branches, and runs
+# the full CI check suite (format, analyze, test) before anything leaves the
+# machine.
+#
+# Git feeds lines of: <local ref> <local sha> <remote ref> <remote sha>
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+source "$root/scripts/git/rules.sh"
+
+zero="0000000000000000000000000000000000000000"
+needs_checks=false
+
+while read -r local_ref local_sha remote_ref _remote_sha; do
+  [[ -z "${remote_ref:-}" ]] && continue
+
+  # Tags (e.g. release tags) are not branch pushes.
+  [[ "$remote_ref" == refs/tags/* ]] && continue
+
+  target="${remote_ref#refs/heads/}"
+
+  if is_protected_branch "$target"; then
+    red "✖ Pushing directly to '$target' is not allowed."
+    dim "  Push a feature branch and open a pull request instead:"
+    dim "    git switch -c feature/my-change"
+    dim "    git push -u origin feature/my-change"
+    exit 1
+  fi
+
+  # Deleting a remote branch needs no checks.
+  [[ "$local_sha" == "$zero" ]] && continue
+
+  check_branch_name "$target" || exit 1
+  needs_checks=true
+done
+
+if $needs_checks; then
+  dim "Running pre-push checks (skip in an emergency with: git push --no-verify — CI will still run them)"
+  "$root/scripts/check.sh"
+fi

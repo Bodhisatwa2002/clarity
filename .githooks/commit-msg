@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Enforces Conventional Commits on the commit subject line.
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+source "$root/scripts/git/rules.sh"
+
+# First non-comment, non-empty line is the subject.
+subject="$(grep -vE '^\s*(#|$)' "$1" | head -n1 || true)"
+
+if [[ -z "$subject" ]]; then
+  red "✖ Empty commit message."
+  exit 1
+fi
+
+check_commit_subject "$subject"
