@@ -33,37 +33,73 @@ product context.
 | Location         | Core Location — "I'm here" + verified visits        |
 | AI search (later)| pgvector in Supabase                                |
 
-Nothing beyond Flutter is wired up yet — the app currently runs entirely
-locally with placeholder screens. Add backend pieces one feature at a time.
+Nothing beyond Flutter (+ `flutter_svg`) is wired up yet — the app runs
+entirely on dummy data (`lib/core/data/mock_data.dart`) held in one
+`AppState`. Add backend pieces one feature at a time.
 
 ## Project structure
 
 ```
 lib/
-  main.dart                         # App entry → ClarityApp → AppShell
+  main.dart                       # runApp(ClarityApp)
+  app/
+    clarity_app.dart              # MaterialApp + AppScope (state)
+    routes.dart                   # Routes.* names + onGenerateRoute
   core/
-    theme/app_theme.dart            # Colors + ThemeData (AppColors, AppTheme)
-    constants/                      # (empty) app-wide constants
+    theme/                        # AppColors, AppGradients, AppShadows, AppText, AppTheme
+    icons/app_icons.dart          # AppIcon (the design's SVG line icons) + AppIconView
+    models/                       # Place, Visit (kept separate!), Person, PlaceCategory, social.dart
+    data/mock_data.dart           # Dummy people, places, visits, feed, notifications
+    state/app_state.dart          # AppState (ChangeNotifier) + AppScope / context.app
+    utils/                        # Fmt (formatters), Layout (design → device offsets)
   features/
-    map/map_screen.dart             # Tab 1 — My Map (home)
-    feed/feed_screen.dart           # Tab 2 — Friends feed
-    add_place/add_place_screen.dart # Tab 3 — Add a place + review
-    friends/friends_screen.dart     # Tab 4 — Contact sync / friends
-    profile/profile_screen.dart     # Tab 5 — Profile + settings
-    shared/widgets/
-      app_shell.dart                # 5-tab bottom navigation
-      placeholder_screen.dart       # Reusable "coming soon" screen
-docs/
-  feature-brief.pdf                 # Full product brief
+    onboarding/                   # 01–06, 21: splash, welcome, phone, OTP, profile, permissions, consent
+    map/                          # 07 map, 08 list, 23a empty map (tab 1)
+    add_place/                    # 09 add a place (search / I'm here / drop a pin)
+    review/                       # 11 write / edit review
+    place/                        # 10 place detail, 23c no reviews
+    feed/                         # 12 feed, 24b error, 24c loading (tab 2)
+    friends/                      # 13 find friends, 14 friends & requests, 15 friend profile, 23b (tab 3)
+    search/                       # 16 search
+    share/                        # 17 share sheet (showShareSheet)
+    lists/                        # 18 collaborative list
+    profile/                      # 19 my profile (tab 4), 20 settings
+    notifications/                # 22 notifications
+    system/                       # 24a offline, hidden "Design states" sheet
+    shared/widgets/               # Reusable components (see below) + app_shell.dart
+assets/fonts/                     # Manrope + Newsreader (OFL), bundled
+docs/feature-brief.pdf            # Full product brief
 ```
 
-**Convention:** one folder per feature under `lib/features/`. Shared widgets go
-in `lib/features/shared/`. Core/cross-cutting things (theme, constants, later:
-services, models) go in `lib/core/`.
+**Convention:** one folder per feature under `lib/features/`, screen-specific
+widgets in that feature's `widgets/`. Anything used by two features goes in
+`lib/features/shared/widgets/`. Cross-cutting non-UI code goes in `lib/core/`.
+
+**Reusable components** (`lib/features/shared/widgets/`): `SheetScaffold`
+(blue header + white sheet — most screens), `SkyScaffold` (full gradient),
+`HeaderBar`, `AccentTitle` (bold + italic serif headline), `PrimaryButton`,
+`DashedButton`, `PillButton`, `TextLinkButton`, `TagChip`, `StatusPill`,
+`CategoryFilterBar`, `GlassIconButton`, `GlassOrb`, `ProgressRing`,
+`GlassStatTile`, `GlassTag`, `InitialsAvatar`, `AvatarStack`, `SegmentedTabs`,
+`GlassTabs`, `AppSwitch`, `SearchField`, `BareTextField`, `RatingBadge`,
+`StarRow`, `DashedBorder`, `Pressable`, `MapArtView`/`MapPinMarker`,
+`FloatingNavBar`. Build new UI from these before writing new widgets; take
+colors and type only from `AppColors` / `AppText`.
+
+**Design source:** `Clarity App Design.html` (390×844 artboards). Offsets in
+the design include a 60pt status-bar area — use `Layout.y()` / `SheetScaffold`'s
+`sheetTop` with the design's numbers rather than hand-tuning.
+
+**Dev shortcuts:** `flutter run --route=/home` skips onboarding. Long-press
+"Clarity · version 1.0" in Settings for the hidden *Design states* sheet
+(offline, feed loading/error, place with no reviews, new-user empty states).
 
 ## Screens to build (MVP)
 
-Current state: the 5-tab shell exists; each tab is a placeholder. Build order:
+Current state: every screen in the design is built as UI with dummy data and
+a working interactive flow (sign-up → map → add place → review → place →
+share / lists; feed, friends, search, notifications, settings). The map is an
+illustration until Google Maps is wired. Original build order:
 
 1. **My Map** — map with your pins, color-coded by category; list view + filters
 2. **Add a place** — Google Places search / "I'm here" GPS / drop a pin

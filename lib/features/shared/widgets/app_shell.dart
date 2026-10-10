@@ -1,65 +1,43 @@
 import 'package:flutter/material.dart';
-import '../../map/map_screen.dart';
-import '../../feed/feed_screen.dart';
-import '../../add_place/add_place_screen.dart';
-import '../../friends/friends_screen.dart';
-import '../../profile/profile_screen.dart';
 
-/// The main app shell with the 5 bottom-navigation tabs from the feature brief:
-/// Map · Feed · Add (+) · Friends · Profile
-class AppShell extends StatefulWidget {
+import '../../../app/routes.dart';
+import '../../../core/state/app_state.dart';
+import '../../feed/feed_screen.dart';
+import '../../friends/friends_screen.dart';
+import '../../map/map_screen.dart';
+import '../../profile/profile_screen.dart';
+import 'floating_nav_bar.dart';
+
+/// The signed-in home: four tabs under one floating nav bar.
+/// The (+) in the middle opens "Add a place" as a full-screen flow.
+class AppShell extends StatelessWidget {
   const AppShell({super.key});
 
-  @override
-  State<AppShell> createState() => _AppShellState();
-}
-
-class _AppShellState extends State<AppShell> {
-  int _index = 0;
-
-  static const _screens = [
-    MapScreen(),
-    FeedScreen(),
-    AddPlaceScreen(),
-    FriendsScreen(),
-    ProfileScreen(),
-  ];
+  static const _tabs = [MapScreen(), FeedScreen(), FriendsScreen(), ProfileScreen()];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: _index, children: _screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Map',
+    final state = context.app;
+    return Stack(
+      children: [
+        IndexedStack(
+          index: state.tab.index,
+          children: [
+            // Pause animations (e.g. loading skeletons) on hidden tabs.
+            for (var i = 0; i < _tabs.length; i++) TickerMode(enabled: i == state.tab.index, child: _tabs[i]),
+          ],
+        ),
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: 26,
+          child: FloatingNavBar(
+            current: state.tab,
+            onSelect: state.selectTab,
+            onAdd: () => Navigator.pushNamed(context, Routes.addPlace),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.dynamic_feed_outlined),
-            selectedIcon: Icon(Icons.dynamic_feed),
-            label: 'Feed',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.add_circle_outline),
-            selectedIcon: Icon(Icons.add_circle),
-            label: 'Add',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people),
-            label: 'Friends',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
