@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../app/routes.dart';
-import '../../core/data/mock_data.dart';
 import '../../core/icons/app_icons.dart';
 import '../../core/models/place.dart';
 import '../../core/models/place_category.dart';
@@ -67,8 +66,7 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
   Widget build(BuildContext context) {
     final state = context.app;
     final q = _query.text.trim().toLowerCase();
-    final results = MockData.addPlaceSearchIds
-        .map(state.place)
+    final results = state.addPlaceSuggestions
         .where((p) => q.isEmpty || p.name.toLowerCase().contains(q) || p.address.toLowerCase().contains(q))
         .take(4)
         .toList();
@@ -123,9 +121,7 @@ class _AddPlaceScreenState extends State<AddPlaceScreen> {
                   ],
                 ),
                 AddMode.here => HerePanel(
-                  candidates: [
-                    for (final n in MockData.nearbyHere) (place: state.place(n.placeId), distance: n.distance),
-                  ],
+                  candidates: state.nearbyHere,
                   pickedId: _pickedId,
                   onPick: (id) => setState(() => _pickedId = id),
                 ),

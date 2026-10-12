@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../app/routes.dart';
-import '../../core/data/mock_data.dart';
 import '../../core/icons/app_icons.dart';
-import '../../core/models/place_category.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/layout.dart';
+import '../../core/utils/share_links.dart';
+import '../badges/widgets/profile_badges.dart';
 import '../share/share_sheet.dart';
 import '../shared/widgets/content.dart';
 import '../shared/widgets/glass.dart';
 import '../shared/widgets/layout.dart';
-import 'widgets/badge_grid.dart';
 import 'widgets/category_bars.dart';
 
 /// Tab 4 · My profile (19).
@@ -23,12 +22,7 @@ class ProfileScreen extends StatelessWidget {
     final state = context.app;
     final me = state.me;
 
-    // Category counts: the demo account's older history plus visits on the map.
-    final counts = <PlaceCategory, int>{if (!state.isNewAccount) ...MockData.olderCategoryCounts};
-    for (final v in state.myVisits) {
-      final c = state.place(v.placeId).category;
-      counts[c] = (counts[c] ?? 0) + 1;
-    }
+    final counts = state.myCategoryCounts;
     final top = (counts.entries.where((e) => e.value > 0).toList()..sort((a, b) => b.value.compareTo(a.value)))
         .take(4)
         .toList();
@@ -66,7 +60,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '@${state.username} · clarity.in/${state.username}',
+            '@${state.username} · ${ShareLinks.map(state.username)}',
             style: AppText.sans(13, weight: FontWeight.w600, color: AppColors.onBlueSoft),
           ),
           const SizedBox(height: 14),
@@ -100,19 +94,19 @@ class ProfileScreen extends StatelessWidget {
           else
             CategoryBars(counts: top),
           const SizedBox(height: 18),
-          const BadgeGrid(),
+          const ProfileBadges(),
           const SizedBox(height: 18),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text('Lists', style: AppText.sans(20, weight: FontWeight.w700, letterSpacing: -0.3)),
           ),
           const SizedBox(height: 8),
-          for (final list in MockData.myLists) ...[
+          for (final list in state.lists) ...[
             ChevronRow(
               title: list.title,
-              subtitle: list.subtitle,
+              subtitle: state.listSubtitle(list),
               titleStyle: AppText.serif(19),
-              onTap: () => Navigator.pushNamed(context, Routes.collabList),
+              onTap: () => Navigator.pushNamed(context, Routes.collabList, arguments: list.id),
             ),
             const SizedBox(height: 8),
           ],

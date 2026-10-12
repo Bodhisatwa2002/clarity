@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../app/routes.dart';
-import '../../core/data/mock_data.dart';
 import '../../core/icons/app_icons.dart';
-import '../../core/models/place_category.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
+import '../badges/widgets/friend_badges_section.dart';
 import '../share/share_sheet.dart';
 import '../shared/widgets/buttons.dart';
 import '../shared/widgets/chips.dart';
@@ -30,8 +29,7 @@ class FriendProfileScreen extends StatelessWidget {
     final isFriend = state.isFriend(personId);
     final requested = state.isRequested(personId);
     final visits = state.visitsBy(personId);
-    final topCategories =
-        MockData.topCategoriesByPerson[personId] ?? const [(PlaceCategory.food, 6), (PlaceCategory.viewpoint, 4)];
+    final topCategories = state.topCategoriesFor(personId);
 
     return SheetScaffold(
       sheetTop: 386,
@@ -162,7 +160,8 @@ class FriendProfileScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
+          if (isFriend) FriendBadgesSection(person: person),
           const SectionLabel('RECENT VISITS'),
           const SizedBox(height: 14),
           if (visits.isEmpty)

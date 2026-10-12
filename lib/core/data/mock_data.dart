@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import '../models/badge.dart';
 import '../models/person.dart';
 import '../models/place.dart';
 import '../models/place_category.dart';
@@ -14,14 +15,17 @@ abstract final class MockData {
 
   static const String meId = 'me';
 
+  static const Color meAvatarBg = Color(0xFFF2F7FF);
+  static const Color meAvatarFg = Color(0xFF1D4E9E);
+
   static const Person me = Person(
     id: meId,
     name: 'Bodhi Chakraborty',
     initials: 'BC',
     username: 'bodhi',
     city: 'Agartala',
-    avatarBg: Color(0xFFF2F7FF),
-    avatarFg: Color(0xFF1D4E9E),
+    avatarBg: meAvatarBg,
+    avatarFg: meAvatarFg,
   );
 
   static const Person rahul = Person(
@@ -164,6 +168,18 @@ abstract final class MockData {
   /// Friends of the demo account, in taste-match order.
   static const List<String> friendIds = ['rahul', 'priya', 'asha', 'meera', 'kabir'];
 
+  /// Friends who said Congrats on Rahul's newest badge (Trekker, from Dzükou).
+  /// Asha went to Hilltop Momo Stall and Priya to Neermahal because of you.
+  static const List<VisitThanks> visitThanks = [
+    VisitThanks(visitId: 'v-momo', profileId: 'asha'),
+    VisitThanks(visitId: 'v-neermahal', profileId: 'priya'),
+  ];
+
+  static const List<BadgeCongrats> badgeCongrats = [
+    BadgeCongrats(ownerId: 'rahul', badgeId: 'trekker', fromId: 'priya'),
+    BadgeCongrats(ownerId: 'rahul', badgeId: 'trekker', fromId: 'asha'),
+  ];
+
   /// Incoming friend requests.
   static const List<String> requestIds = ['tanmoy', 'sneha', 'dev'];
 
@@ -199,6 +215,8 @@ abstract final class MockData {
       name: 'Neermahal',
       area: 'Melaghar',
       address: 'Melaghar, Tripura',
+      city: 'Melaghar',
+      state: 'Tripura',
       category: PlaceCategory.viewpoint,
       mapPosition: Offset(280, 268),
     ),
@@ -207,6 +225,8 @@ abstract final class MockData {
       name: 'Tripura Sundari Temple',
       area: 'Udaipur',
       address: 'Udaipur, Gomati',
+      city: 'Udaipur',
+      state: 'Tripura',
       category: PlaceCategory.temple,
       mapPosition: Offset(200, 348),
       distance: '54 km',
@@ -216,6 +236,8 @@ abstract final class MockData {
       name: 'Jampui Hills',
       area: 'North Tripura',
       address: 'North Tripura',
+      city: 'Jampui Hills',
+      state: 'Tripura',
       category: PlaceCategory.trek,
       mapPosition: Offset(330, 128),
     ),
@@ -224,6 +246,8 @@ abstract final class MockData {
       name: 'Hilltop Momo Stall',
       area: 'Agartala',
       address: 'Battala, Agartala',
+      city: 'Agartala',
+      state: 'Tripura',
       category: PlaceCategory.food,
       mapPosition: Offset(104, 194),
       distance: '1.6 km',
@@ -233,6 +257,8 @@ abstract final class MockData {
       name: 'Lakeside Reading Café',
       area: 'Agartala',
       address: 'Lake Road, Agartala',
+      city: 'Agartala',
+      state: 'Tripura',
       category: PlaceCategory.cafe,
       mapPosition: Offset(64, 300),
       distance: '0.8 km',
@@ -242,6 +268,8 @@ abstract final class MockData {
       name: 'Rudra Homestay',
       area: 'Melaghar',
       address: 'Melaghar, Tripura',
+      city: 'Melaghar',
+      state: 'Tripura',
       category: PlaceCategory.stay,
       mapPosition: Offset(214, 150),
     ),
@@ -250,6 +278,8 @@ abstract final class MockData {
       name: 'Night Market Chaat',
       area: 'Agartala',
       address: 'Night Market, Agartala',
+      city: 'Agartala',
+      state: 'Tripura',
       category: PlaceCategory.food,
       mapPosition: Offset(290, 350),
     ),
@@ -258,6 +288,8 @@ abstract final class MockData {
       name: 'Ujjayanta Palace',
       area: 'Agartala',
       address: 'Palace Compound, Agartala',
+      city: 'Agartala',
+      state: 'Tripura',
       category: PlaceCategory.viewpoint,
       distance: '1.2 km',
     ),
@@ -266,6 +298,8 @@ abstract final class MockData {
       name: 'Rabindra Kanan',
       area: 'Agartala',
       address: 'Agartala',
+      city: 'Agartala',
+      state: 'Tripura',
       category: PlaceCategory.viewpoint,
       distance: '2.1 km',
     ),
@@ -274,6 +308,8 @@ abstract final class MockData {
       name: 'Heritage Park',
       area: 'Agartala',
       address: 'Kunjaban, Agartala',
+      city: 'Agartala',
+      state: 'Tripura',
       category: PlaceCategory.trek,
       distance: '3.4 km',
     ),
@@ -282,6 +318,8 @@ abstract final class MockData {
       name: 'Lake Road Book Store',
       area: 'Agartala',
       address: 'Lake Road, Agartala',
+      city: 'Agartala',
+      state: 'Tripura',
       category: PlaceCategory.other,
       distance: '40 m',
     ),
@@ -290,6 +328,8 @@ abstract final class MockData {
       name: 'Dzükou Valley',
       area: 'Nagaland',
       address: 'Kohima, Nagaland',
+      city: 'Kohima',
+      state: 'Nagaland',
       category: PlaceCategory.trek,
     ),
     Place(
@@ -297,6 +337,8 @@ abstract final class MockData {
       name: 'Ward Lake',
       area: 'Shillong',
       address: 'Shillong, Meghalaya',
+      city: 'Shillong',
+      state: 'Meghalaya',
       category: PlaceCategory.viewpoint,
     ),
   ];
@@ -352,7 +394,7 @@ abstract final class MockData {
       text: 'Tiny stall, big flavour. The fried pork momos are the reason to come.',
       companions: ['Asha'],
       tags: ['Worth it'],
-      budget: '₹',
+      budgetPerPerson: 150,
       photoCount: 2,
     ),
     Visit(
@@ -367,7 +409,7 @@ abstract final class MockData {
           'Inside is a bit bare, but the views from the terrace are worth it.',
       companions: ['Rahul'],
       tags: ['Worth it', 'Best at sunset', 'Good for groups'],
-      budget: '₹₹',
+      budgetPerPerson: 400,
       photoCount: 4,
       verified: true,
     ),
@@ -379,7 +421,7 @@ abstract final class MockData {
       rating: 4.4,
       tip: 'Ask for the lake-facing room upstairs.',
       companions: ['Rahul'],
-      budget: '₹₹',
+      budgetPerPerson: 1200,
       photoCount: 1,
     ),
     Visit(
@@ -391,19 +433,19 @@ abstract final class MockData {
       tip: 'Quiet before noon, good for work, weak Wi‑Fi.',
       companions: ['solo'],
       tags: ['Solo-friendly'],
-      budget: '₹₹',
+      budgetPerPerson: 350,
     ),
     Visit(
       id: 'v-chaat',
       placeId: 'night-chaat',
       authorId: meId,
       date: _d(2026, 6, 20),
-      status: VisitStatus.notRecommended,
+      recommended: false,
       rating: 3.0,
       tip: 'Busy after 8pm; parking is tough.',
       companions: ['Priya'],
       tags: ['Skip it'],
-      budget: '₹',
+      budgetPerPerson: 120,
     ),
     Visit(
       id: 'v-temple',
@@ -437,6 +479,22 @@ abstract final class MockData {
       rating: 5.0,
       tip: 'Start before 6am, the last stretch is steep.',
       text: 'Hardest climb of my life and worth every step. Start before 6am.',
+    ),
+    Visit(
+      id: 'f-rahul-jampui',
+      placeId: 'jampui',
+      authorId: 'rahul',
+      date: _d(2026, 3, 14),
+      rating: 4.0,
+      tip: 'Orange season is November; book the homestay early.',
+    ),
+    Visit(
+      id: 'f-rahul-heritage',
+      placeId: 'heritage-park',
+      authorId: 'rahul',
+      date: _d(2026, 1, 25),
+      rating: 3.5,
+      tip: 'Fine for a morning walk, not a real trek.',
     ),
     Visit(
       id: 'f-rahul-neermahal',
@@ -547,6 +605,17 @@ abstract final class MockData {
       likes: 8,
     ),
     FeedPost(
+      id: 'a-badge',
+      type: FeedPostType.badge,
+      authorId: 'rahul',
+      verb: 'earned',
+      subject: 'Trekker I',
+      when: '2h',
+      quote: 'Review different treks and hikes.',
+      likes: 2,
+      badgeId: 'trekker',
+    ),
+    FeedPost(
       id: 'b',
       type: FeedPostType.ask,
       authorId: 'asha',
@@ -652,6 +721,7 @@ abstract final class MockData {
     id: 'goa-2027',
     title: 'Goa trip 2027',
     planning: 'planning for Jan 2027',
+    ownerId: 'priya',
     memberIds: ['me', 'priya', 'rahul', 'asha'],
     items: [
       CollabListItem(

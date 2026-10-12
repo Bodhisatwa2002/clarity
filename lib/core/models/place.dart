@@ -11,6 +11,8 @@ class Place {
     required this.area,
     required this.address,
     required this.category,
+    this.city,
+    this.state,
     this.mapPosition,
     this.distance,
   });
@@ -25,6 +27,12 @@ class Place {
   final String address;
   final PlaceCategory category;
 
+  /// City for the Cities badge; falls back to [area] when unknown.
+  final String? city;
+
+  /// Indian state ("Tripura"), for the States and Seven Sisters badges.
+  final String? state;
+
   /// Where the pin sits on the illustrated home map (390×648 space).
   final Offset? mapPosition;
 
@@ -37,6 +45,8 @@ class Place {
     area: area,
     address: address,
     category: category,
+    city: city,
+    state: state,
     mapPosition: mapPosition ?? this.mapPosition,
     distance: distance,
   );

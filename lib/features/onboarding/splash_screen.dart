@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../../app/routes.dart';
 import '../../core/icons/app_icons.dart';
+import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../shared/widgets/glass.dart';
 
@@ -26,10 +27,14 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     _tick = Timer.periodic(const Duration(milliseconds: 380), (_) => setState(() => _dot = (_dot + 1) % 3));
-    _done = Timer(const Duration(milliseconds: 1900), () {
+    _done = Timer(const Duration(milliseconds: 1900), () async {
+      // A restored Supabase session goes straight to the map.
+      final state = context.appRead;
+      await state.ready;
       // Only advance if the splash is still on screen (deep links may cover it).
       if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) {
-        Navigator.pushReplacementNamed(context, Routes.welcome);
+        final signedIn = state.isSignedIn && state.hasProfile;
+        Navigator.pushReplacementNamed(context, signedIn ? Routes.home : Routes.welcome);
       }
     });
   }

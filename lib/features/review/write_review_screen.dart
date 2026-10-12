@@ -2,13 +2,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/routes.dart';
-import '../../core/data/mock_data.dart';
 import '../../core/icons/app_icons.dart';
 import '../../core/models/place_category.dart';
 import '../../core/models/visit.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
+import '../badges/badge_moments.dart';
 import '../shared/widgets/buttons.dart';
 import '../shared/widgets/controls.dart';
 import '../shared/widgets/glass.dart';
@@ -25,7 +25,8 @@ class ReviewArgs {
   final bool editing;
 }
 
-/// 11 · Write / edit review.
+/// 11 · Write / edit review — only for places you've been. "Want to go" is a
+/// save on the place screen, not a review.
 class WriteReviewScreen extends StatefulWidget {
   const WriteReviewScreen({super.key, required this.args});
 
@@ -42,7 +43,6 @@ class WriteReviewScreen extends StatefulWidget {
     'Bike parking',
     'Washroom',
   ];
-  static const budgets = ['₹', '₹₹', '₹₹₹', '₹₹₹₹'];
   static const maxPhotos = 5;
 
   @override
@@ -52,14 +52,14 @@ class WriteReviewScreen extends StatefulWidget {
 class _WriteReviewScreenState extends State<WriteReviewScreen> {
   final _tip = TextEditingController();
   final _text = TextEditingController();
-  VisitStatus _status = VisitStatus.visited;
+  final _budget = TextEditingController();
+  bool _recommended = true;
   int _rating = 0;
   int _photos = 2;
   DateTime _date = DateTime.now();
   late PlaceCategory _category;
   final Set<String> _with = {};
   final Set<String> _tags = {};
-  String? _budget = '₹₹';
 
   @override
   void initState() {
@@ -69,7 +69,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     _category = place.category;
     final existing = state.myVisitFor(place.id);
     if (existing != null) {
-      _status = existing.status;
+      _recommended = existing.recommended;
       _rating = existing.rating.round();
       _tip.text = existing.tip;
       _text.text = existing.text;
@@ -77,7 +77,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       _date = existing.date;
       _with.addAll(existing.companions.where((c) => c != 'family'));
       _tags.addAll(existing.tags);
-      _budget = existing.budget;
+      _budget.text = existing.budgetPerPerson?.toString() ?? '';
     } else {
       final firstFriend = state.friends.firstOrNull;
       _with.add(firstFriend?.firstName ?? 'solo');
@@ -88,6 +88,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   void dispose() {
     _tip.dispose();
     _text.dispose();
+    _budget.dispose();
     super.dispose();
   }
 
@@ -95,28 +96,51 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
 
   void _post() {
     final state = context.appRead;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final before = BadgeMoments.snapshot(state);
     state.saveVisit(
       Visit(
-        id: 'v-${widget.args.placeId}',
+        id: state.myVisitFor(widget.args.placeId)?.id ?? state.newVisitId(widget.args.placeId),
         placeId: widget.args.placeId,
-        authorId: MockData.meId,
+        authorId: state.me.id,
         date: _date,
-        status: _status,
+        recommended: _recommended,
         rating: _rating.toDouble(),
         tip: _tip.text.trim(),
         text: _text.text.trim(),
         companions: _with.toList(),
         tags: _tags.toList(),
-        budget: _budget,
+        budgetPerPerson: int.tryParse(_budget.text),
         photoCount: _photos,
       ),
     );
     if (widget.args.editing) {
-      Navigator.pop(context);
+      navigator.pop();
     } else {
-      Navigator.pushReplacementNamed(context, Routes.place, arguments: widget.args.placeId);
+      navigator.pushReplacementNamed(Routes.place, arguments: widget.args.placeId);
     }
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Review posted to your map')));
+    BadgeMoments.afterReview(
+      navigator: navigator,
+      messenger: messenger,
+      state: state,
+      before: before,
+      placeId: widget.args.placeId,
+    );
+  }
+
+  void _toggleTag(String tag) {
+    setState(() {
+      if (!_tags.remove(tag) && _tags.length < Visit.maxTags) _tags.add(tag);
+    });
+  }
+
+  /// Adds a custom tag, matching a built-in one if it's the same words.
+  void _addTag(String tag) {
+    final builtIn = WriteReviewScreen.quickTags.where((t) => t.toLowerCase() == tag.toLowerCase()).firstOrNull;
+    final exists = _tags.any((t) => t.toLowerCase() == tag.toLowerCase());
+    if (exists || _tags.length >= Visit.maxTags) return;
+    setState(() => _tags.add(builtIn ?? tag));
   }
 
   Future<void> _pickDate() async {
@@ -159,6 +183,8 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   Future<void> _pickCategory() async {
     final picked = await showModalBottomSheet<PlaceCategory>(
       context: context,
+      // The list is taller than the default 9/16-of-the-screen cap.
+      isScrollControlled: true,
       backgroundColor: AppColors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (context) => CategoryPickerSheet(selected: _category),
@@ -204,19 +230,23 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       ),
       sheet: ListView(
         padding: const EdgeInsets.fromLTRB(18, 22, 18, 120),
+        // The number pad has no Done key; scrolling puts it away.
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         children: [
-          SegmentedTabs(
-            labels: [for (final s in VisitStatus.values) s.label],
-            selected: _status.index,
-            onChanged: (i) => setState(() => _status = VisitStatus.values[i]),
-          ),
-          const SizedBox(height: 22),
           StarPicker(rating: _rating, onChanged: (r) => setState(() => _rating = r)),
           const SizedBox(height: 6),
           Text(
             WriteReviewScreen.ratingWords[_rating],
             textAlign: TextAlign.center,
             style: AppText.serif(18, italic: true, color: AppColors.slate),
+          ),
+          const SizedBox(height: 22),
+          const FieldLabel(label: 'Would you recommend it?'),
+          const SizedBox(height: 8),
+          SegmentedTabs(
+            labels: const ['Yes', 'No'],
+            selected: _recommended ? 0 : 1,
+            onChanged: (i) => setState(() => _recommended = i == 0),
           ),
           const SizedBox(height: 22),
           FieldLabel(label: 'One thing to know', required: true, counter: '${_tip.text.length}/90'),
@@ -276,39 +306,27 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
             ],
           ),
           const SizedBox(height: 22),
-          const FieldLabel(label: 'Quick tags'),
+          FieldLabel(label: 'Quick tags', counter: '${_tags.length}/${Visit.maxTags}'),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final t in WriteReviewScreen.quickTags)
-                ToggleTag(
-                  label: t,
-                  serif: true,
-                  selected: _tags.contains(t),
-                  onTap: () => setState(() => _tags.contains(t) ? _tags.remove(t) : _tags.add(t)),
-                ),
+              for (final t in [
+                ...WriteReviewScreen.quickTags,
+                ..._tags.where((t) => !WriteReviewScreen.quickTags.contains(t)),
+              ])
+                ToggleTag(label: t, serif: true, selected: _tags.contains(t), onTap: () => _toggleTag(t)),
+              CustomTagInput(maxLength: Visit.maxTagLength, enabled: _tags.length < Visit.maxTags, onAdd: _addTag),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            'BUDGET',
-            style: AppText.sans(12, weight: FontWeight.w700, color: AppColors.muted),
-          ),
+          const SizedBox(height: 22),
+          const FieldLabel(label: 'Budget per person'),
           const SizedBox(height: 8),
-          Row(
-            spacing: 8,
-            children: [
-              for (final b in WriteReviewScreen.budgets)
-                ToggleTag(
-                  label: b,
-                  height: 40,
-                  minWidth: 56,
-                  selected: _budget == b,
-                  onTap: () => setState(() => _budget = _budget == b ? null : b),
-                ),
-            ],
+          BudgetField(
+            controller: _budget,
+            level: Visit.budgetLevelFor(int.tryParse(_budget.text)),
+            onChanged: () => setState(() {}),
           ),
         ],
       ),

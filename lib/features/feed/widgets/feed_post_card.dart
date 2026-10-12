@@ -5,6 +5,8 @@ import '../../../core/icons/app_icons.dart';
 import '../../../core/models/social.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../badges/badge_detail_sheet.dart';
+import '../../badges/widgets/badge_emblem.dart';
 import '../../shared/widgets/avatar.dart';
 import '../../shared/widgets/buttons.dart';
 import '../../shared/widgets/content.dart';
@@ -76,27 +78,46 @@ class _FeedPostCardState extends State<FeedPostCard> {
             FeedPostType.visit => _VisitBody(post: post),
             FeedPostType.ask => _AskBody(post: post),
             FeedPostType.list => _ListBody(post: post),
+            FeedPostType.badge => _BadgeBody(post: post),
           },
           Row(
             spacing: 8,
             children: [
-              _ReactionPill(
-                active: _liked,
-                activeBg: AppColors.ink,
-                activeFg: AppColors.white,
-                onTap: () => setState(() => _liked = !_liked),
-                child: (fg) => Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 6,
-                  children: [
-                    AppIconView(AppIcon.heart, size: 15, color: fg, fill: _liked ? AppColors.white : null),
-                    Text(
-                      '${post.likes + (_liked ? 1 : 0)}',
-                      style: AppText.sans(13, weight: FontWeight.w700, color: fg),
-                    ),
-                  ],
+              if (post.type == FeedPostType.badge && post.badgeId != null)
+                Builder(
+                  builder: (context) {
+                    final from = state.congratsFor(post.authorId, post.badgeId!);
+                    final sent = from.contains(state.me.id);
+                    return _ReactionPill(
+                      active: sent,
+                      activeBg: AppColors.ink,
+                      activeFg: AppColors.white,
+                      onTap: () => state.toggleCongrats(post.authorId, post.badgeId!),
+                      child: (fg) => Text(
+                        from.isEmpty ? 'Congrats' : '${sent ? 'Congrats sent' : 'Congrats'} · ${from.length}',
+                        style: AppText.sans(13, weight: FontWeight.w700, color: fg),
+                      ),
+                    );
+                  },
+                )
+              else
+                _ReactionPill(
+                  active: _liked,
+                  activeBg: AppColors.ink,
+                  activeFg: AppColors.white,
+                  onTap: () => setState(() => _liked = !_liked),
+                  child: (fg) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 6,
+                    children: [
+                      AppIconView(AppIcon.heart, size: 15, color: fg, fill: _liked ? AppColors.white : null),
+                      Text(
+                        '${post.likes + (_liked ? 1 : 0)}',
+                        style: AppText.sans(13, weight: FontWeight.w700, color: fg),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               if (post.type == FeedPostType.visit && post.placeId != null)
                 Builder(
                   builder: (context) {
@@ -116,6 +137,45 @@ class _FeedPostCardState extends State<FeedPostCard> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// "Rahul earned Trekker I": the badge and what it's for. Opens the badge.
+class _BadgeBody extends StatelessWidget {
+  const _BadgeBody({required this.post});
+
+  final FeedPost post;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.app;
+    final badge = state.badgesOf(post.authorId).where((b) => b.id == post.badgeId).firstOrNull;
+    final latest = badge == null || badge.placeIds.isEmpty ? null : state.place(badge.placeIds.first).name;
+    return Pressable(
+      onTap: () => showBadgeDetail(context, post.badgeId!, personId: post.authorId),
+      pressedOpacity: 0.85,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(20)),
+        child: Row(
+          spacing: 14,
+          children: [
+            if (badge != null) BadgeEmblem(badge: badge, size: 56),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 3,
+                children: [
+                  Text(post.quote, style: AppText.sans(14, weight: FontWeight.w600, height: 1.35)),
+                  if (latest != null)
+                    Text('The latest was $latest.', style: AppText.sans(13, height: 1.35, color: AppColors.slate)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -13,7 +13,7 @@ import '../shared/widgets/glass.dart';
 import '../shared/widgets/layout.dart';
 import 'widgets/onboarding_widgets.dart';
 
-/// 04 · OTP verification — step 2 of sign-up. Any 6 digits work for now.
+/// 04 · OTP verification — step 2 of sign-up. On demo data any 6 digits work.
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
 
@@ -60,11 +60,23 @@ class _OtpScreenState extends State<OtpScreen> {
   void _resend() {
     _controller.clear();
     _startTimer();
+    context.appRead.sendCode();
   }
 
-  void _verify() {
+  bool _verifying = false;
+
+  Future<void> _verify() async {
+    final state = context.appRead;
     FocusScope.of(context).unfocus();
-    if (context.appRead.isNewAccount) {
+    setState(() => _verifying = true);
+    final error = await state.verifyCode(_code);
+    if (!mounted) return;
+    setState(() => _verifying = false);
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    if (state.isNewAccount) {
       Navigator.pushNamed(context, Routes.createProfile);
     } else {
       Navigator.pushNamedAndRemoveUntil(context, Routes.home, (_) => false);
@@ -78,7 +90,7 @@ class _OtpScreenState extends State<OtpScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const StepHeader(step: 2),
+          StepHeader(step: 2, signUp: context.app.isNewAccount),
           const SizedBox(height: 28),
           Center(
             child: GlassOrb(
@@ -118,7 +130,14 @@ class _OtpScreenState extends State<OtpScreen> {
             ],
           ),
           const SizedBox(height: 34),
-          _CodeBoxes(controller: _controller, focusNode: _focus, onChanged: () => setState(() {})),
+          _CodeBoxes(
+            controller: _controller,
+            focusNode: _focus,
+            onChanged: () {
+              if (_complete) _focus.unfocus();
+              setState(() {});
+            },
+          ),
           const SizedBox(height: 22),
           SizedBox(
             height: 44,
@@ -142,7 +161,10 @@ class _OtpScreenState extends State<OtpScreen> {
             ),
           ),
           const Spacer(),
-          PrimaryButton(label: 'Verify & continue', onPressed: _complete ? _verify : null),
+          PrimaryButton(
+            label: _verifying ? 'Checking…' : 'Verify & continue',
+            onPressed: _complete && !_verifying ? _verify : null,
+          ),
           const SizedBox(height: 14),
           const Footnote('The code expires in 10 minutes. Never share it with anyone.'),
         ],

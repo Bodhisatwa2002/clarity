@@ -7,6 +7,7 @@ import '../../core/models/visit.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../review/write_review_screen.dart';
+import '../lists/widgets/add_to_list_sheet.dart';
 import '../share/share_sheet.dart';
 import '../shared/widgets/buttons.dart';
 import '../shared/widgets/chips.dart';
@@ -76,7 +77,7 @@ class _ReviewedBody extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              StatusPill(label: mine.status.label),
+              StatusPill(label: mine.statusLabel),
               if (mine.verified)
                 const StatusPill(
                   label: 'Verified visit',
@@ -257,7 +258,7 @@ class _ShareAndListBar extends StatelessWidget {
             icon: AppIcon.plus,
             fontSize: 16,
             shadow: true,
-            onPressed: () => Navigator.pushNamed(context, Routes.collabList),
+            onPressed: () => showAddToListSheet(context, placeId: place.id),
           ),
         ),
       ],

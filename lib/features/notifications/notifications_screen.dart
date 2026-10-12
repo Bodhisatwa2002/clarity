@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../app/routes.dart';
-import '../../core/data/mock_data.dart';
 import '../../core/icons/app_icons.dart';
 import '../../core/models/social.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../review/write_review_screen.dart';
+import '../badges/badge_moments.dart';
 import '../shared/widgets/avatar.dart';
 import '../shared/widgets/buttons.dart';
 import '../shared/widgets/glass.dart';
@@ -40,6 +40,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void _answer(AppNotification n, bool accept) {
     final state = context.appRead;
     accept ? state.acceptRequest(n.personId!) : state.declineRequest(n.personId!);
+    if (accept) BadgeMoments.celebrate(Navigator.of(context), state);
     setState(() => _requestAnswer = accept);
   }
 
@@ -48,8 +49,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final state = context.app;
     final unread = state.unreadCount;
     final groups = [
-      ('TODAY', MockData.notifications.where((n) => n.isToday).toList()),
-      ('THIS WEEK', MockData.notifications.where((n) => !n.isToday).toList()),
+      ('TODAY', state.notifications.where((n) => n.isToday).toList()),
+      ('THIS WEEK', state.notifications.where((n) => !n.isToday).toList()),
     ];
 
     return SheetScaffold(

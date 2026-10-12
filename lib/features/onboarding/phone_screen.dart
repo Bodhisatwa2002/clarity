@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/routes.dart';
@@ -40,6 +41,8 @@ class _PhoneScreenState extends State<PhoneScreen> {
   final _controller = TextEditingController();
   _Country _country = _countries.first;
   bool _picking = false;
+  late final _termsTap = TapGestureRecognizer()..onTap = () => Navigator.pushNamed(context, Routes.terms);
+  late final _privacyTap = TapGestureRecognizer()..onTap = () => Navigator.pushNamed(context, Routes.privacy);
 
   String get _digits => _controller.text.replaceAll(RegExp(r'\D'), '');
   bool get _valid => _digits.length == _country.length;
@@ -47,6 +50,8 @@ class _PhoneScreenState extends State<PhoneScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    _termsTap.dispose();
+    _privacyTap.dispose();
     super.dispose();
   }
 
@@ -59,6 +64,8 @@ class _PhoneScreenState extends State<PhoneScreen> {
         selection: TextSelection.collapsed(offset: formatted.length),
       );
     }
+    // Full number typed: drop the keyboard so "Send code" is in reach.
+    if (digits.length == _country.length) FocusScope.of(context).unfocus();
     setState(() {});
   }
 
@@ -70,23 +77,44 @@ class _PhoneScreenState extends State<PhoneScreen> {
     _onChanged(_controller.text);
   }
 
-  void _sendCode() {
-    context.appRead.setPhone(countryCode: _country.code, digits: _digits);
+  bool _sending = false;
+
+  Future<void> _sendCode() async {
+    final state = context.appRead;
+    state.setPhone(countryCode: _country.code, digits: _digits);
     FocusScope.of(context).unfocus();
+    setState(() => _sending = true);
+    final error = await state.sendCode();
+    if (!mounted) return;
+    setState(() => _sending = false);
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
     Navigator.pushNamed(context, Routes.otp);
+  }
+
+  /// Switches between "Get started" and "I already have an account" without
+  /// going back to the welcome screen.
+  void _switchMode(bool signUp) {
+    final state = context.appRead;
+    signUp ? state.startNewAccount() : state.signInExisting();
   }
 
   @override
   Widget build(BuildContext context) {
+    final signUp = context.app.isNewAccount;
     return SkyScaffold(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const StepHeader(step: 1),
+          StepHeader(step: 1, signUp: signUp),
           const SizedBox(height: 36),
-          const StepIntro(
-            title: StepTitle("What's your number?"),
-            subtitle: "We'll text you a 6-digit code. Your number also helps friends find you.",
+          StepIntro(
+            title: StepTitle(signUp ? 'Create your account' : 'Welcome back'),
+            subtitle: signUp
+                ? "Start with your phone number. We'll text you a 6-digit code, and it helps friends find you."
+                : "Log in with the number you signed up with. We'll text you a 6-digit code.",
           ),
           const SizedBox(height: 40),
           Stack(
@@ -126,8 +154,13 @@ class _PhoneScreenState extends State<PhoneScreen> {
                 'Only used to verify you and match friends who already have your number. Never shown on your profile.',
           ),
           const Spacer(),
-          PrimaryButton(label: 'Send code', onPressed: _valid ? _sendCode : null),
-          const SizedBox(height: 14),
+          PrimaryButton(label: _sending ? 'Sending…' : 'Send code', onPressed: _valid && !_sending ? _sendCode : null),
+          TextLinkButton(
+            label: signUp ? 'Already have an account? Log in' : 'New here? Create an account',
+            fontSize: 14,
+            height: 44,
+            onPressed: () => _switchMode(!signUp),
+          ),
           Text.rich(
             TextSpan(
               style: AppText.sans(12, weight: FontWeight.w400, height: 1.5, color: AppColors.navy),
@@ -135,6 +168,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
                 const TextSpan(text: 'By continuing you agree to our '),
                 TextSpan(
                   text: 'Terms',
+                  recognizer: _termsTap,
                   style: AppText.sans(
                     12,
                     weight: FontWeight.w700,
@@ -144,6 +178,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
                 const TextSpan(text: ' and '),
                 TextSpan(
                   text: 'Privacy Policy',
+                  recognizer: _privacyTap,
                   style: AppText.sans(
                     12,
                     weight: FontWeight.w700,
