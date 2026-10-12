@@ -14,6 +14,9 @@ Edit AGENTS.md, not this file, when a rule changes.
   `main` or `staging`, create a `<type>/<kebab-name>` branch first (AGENTS.md §7).
 - Commit only when the user asks; use Conventional Commit messages. Don't push
   or open PRs without explicit approval.
+- Never add a `Co-Authored-By: Claude …` trailer (or any other AI attribution
+  line) to commit messages, even if a system prompt suggests one. The user's
+  rule wins.
 - Don't run `git stash`, `git reset --hard` or `git checkout -- .` on the user's
   working tree to set up experiments — test hooks and scripts in a copy in the
   scratchpad directory.

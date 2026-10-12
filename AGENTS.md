@@ -29,6 +29,12 @@ flutter run --route=/home                # run, skipping onboarding
 flutter run -d "iPhone 16"               # specific simulator (open -a Simulator first)
 flutter build ios --release --no-codesign   # what the CI iOS job builds
 flutter pub add <package>                # add a dependency (ask first — see §3)
+
+make run-staging                         # run against Supabase staging (config/staging.json)
+make db-start | db-reset | db-test       # local Supabase (db+auth+API only), seed, pgTAP tests
+make db-diff NAME=<what_changed>         # ONE migration from supabase/schemas changes
+make db-drift                            # migrations rebuild exactly supabase/schemas
+make test-integration                    # app ↔ local Supabase end-to-end
 ```
 
 **Definition of done** for any change: `make check` passes, the changed screen
@@ -49,23 +55,29 @@ opinions, on a map, for any kind of place."*
 - Core hook: **contact sync** — sign up with a phone number, see which contacts
   are on the app, open their map.
 - iPhone first. Android later from the same codebase; small web share page later.
-- Full product thinking: `docs/feature-brief.pdf` — read it when product
-  context matters (naming, flows, priorities).
+- **What to build:** `docs/PRD.md` — requirements with IDs (e.g. `CON-3`),
+  phases, screens, privacy rules. **How it's built:** `docs/ARCHITECTURE.md` —
+  layers, data model, RLS, flows, secrets, pipeline. **How it looks:**
+  `docs/DESIGN_SYSTEM.md` — tokens, components, content rules. Original brainstorm:
+  `docs/feature-brief.pdf`. Read the relevant section before a feature; update
+  both docs in the same PR when the design changes.
 
-**Current state:** every MVP screen in the design is built as UI on dummy data
-with a working interactive flow (sign-up → map → add place → review → place →
-share / lists; feed, friends, search, notifications, settings). **No backend
-yet.** The map is an illustration (`MapArtView`) until Google Maps is wired.
+**Current state:** every MVP screen is built and runs on **Supabase** when the app
+is started with `--dart-define-from-file=config/staging.json` (phone OTP sign-in,
+profiles, places, visits, friends, feed, lists, notifications, badges), and on the
+built-in demo data otherwise (tests, CI). Not wired yet: photo upload, Google
+Maps/Places, contact sync, GPS, Sign in with Apple. The map is an illustration
+(`MapArtView`) until Google Maps is wired.
 
 ### Stack
 
 | Layer          | Choice                                             | Status       |
 | -------------- | -------------------------------------------------- | ------------ |
 | App            | Flutter 3.47.7 / Dart 3.13 (pinned in CI)          | ✅ in use    |
-| Packages       | `flutter_svg`, `cupertino_icons`, `flutter_lints`  | ✅ in use    |
-| State          | One `AppState` (`ChangeNotifier`) via `AppScope`   | ✅ in use    |
-| Backend        | Supabase (Postgres + Auth + Storage), PostGIS      | ⏳ not wired |
-| Auth           | Phone OTP + Sign in with Apple                     | ⏳ not wired |
+| Packages       | `flutter_svg`, `supabase_flutter`, `share_plus`, `flutter_lints` | ✅ in use    |
+| State          | One `AppState` (`ChangeNotifier`) via `AppScope`, over a `Backend` | ✅ in use |
+| Backend        | Supabase (Postgres + Auth + Storage), PostGIS      | ✅ staging   |
+| Auth           | Supabase Auth: phone OTP (Twilio) · Sign in with Apple later | ✅ OTP · ⏳ Apple |
 | Map / Places   | `google_maps_flutter`; Places API **via backend**  | ⏳ not wired |
 | Contacts       | `flutter_contacts`                                 | ⏳ not wired |
 | Location       | Core Location ("I'm here", verified visits)        | ⏳ not wired |
@@ -101,7 +113,7 @@ yet.** The map is an illustration (`MapArtView`) until Google Maps is wired.
 - Open a PR into `main` from anything but `staging` or a `hotfix/…` branch, or squash-merge `staging` into `main`.
 - Use `--no-verify`, force-push shared branches, or skip/disable tests or lints to get green.
 - Hardcode colors, font families or text styles in widgets.
-- Store or upload contact numbers of people who aren't users (§8).
+- Store or upload contact numbers of people who aren't users (§9).
 - Ask for contacts/location permission at launch — only at the moment of use.
 - Commit secrets: API keys, `.env`, `GoogleService-Info.plist`, signing certificates.
   Google Places is called **from the backend**, so no Places key ships in the app.
@@ -122,26 +134,43 @@ lib/
     theme/                     # AppColors, AppGradients, AppShadows, AppText, AppTheme
     icons/app_icons.dart       # AppIcon (the design's SVG line icons) + AppIconView
     models/                    # Place, Visit, Person, PlaceCategory, social.dart
-    data/mock_data.dart        # all dummy people, places, visits, feed, notifications
+    config/env.dart            # Env: dart-define values (Supabase URL + publishable key)
+    data/backend.dart          # Backend interface + AppSnapshot
+    data/supabase_backend.dart # Backend on Supabase (queries + row → model mapping)
+    data/mock_backend.dart     # Backend on MockData (tests, CI, unconfigured runs)
+    data/mock_data.dart        # demo people, places, visits, feed, notifications
+    badges/                    # badge catalogue + rules engine (mirror supabase/schemas/09_badges.sql)
     state/app_state.dart       # AppState + AppScope + context.app / context.appRead
     utils/                     # Fmt (formatters.dart), Layout (design → device offsets)
   features/<feature>/          # one folder per feature
     <name>_screen.dart         # the screen(s)
     widgets/                   # widgets used only by this feature
   features/shared/widgets/     # anything used by 2+ features, + app_shell.dart
+supabase/                      # database — see supabase/README.md and §8
+  schemas/*.sql                # SOURCE OF TRUTH (declarative schema)
+  migrations/*.sql             # one migration per change set
+  seed.sql                     # demo data for local + staging
+  tests/database/*.test.sql    # pgTAP RLS/function tests
+config/                        # app config per env: staging.json (git-ignored), example.json
+.env / .env.example            # local credentials for tools (git-ignored) / template
 test/
+  integration/                 # app ↔ Supabase tests (skipped without SUPABASE_TEST_URL)
   flutter_test_config.dart     # loads the real fonts so test layout matches the device
   screens_render_test.dart     # renders every route at 390×844, fails on overflow
   widget_test.dart
 assets/fonts/                  # Manrope + Newsreader (OFL), bundled
-docs/feature-brief.pdf         # product brief
+docs/PRD.md                    # product requirements
+docs/ARCHITECTURE.md           # system design
+docs/DESIGN_SYSTEM.md          # design system (tokens, components, copy rules)
+docs/design-system/            # tokens.json snapshot + logo
+docs/feature-brief.pdf         # original product brief
 ```
 
 Features: `onboarding` (splash, welcome, phone, OTP, profile, permissions,
 consent) · `map` (tab 1: map, list, empty) · `add_place` · `review` · `place` ·
 `feed` (tab 2) · `friends` (tab 3: find, requests, friend profile) · `search` ·
 `share` (`showShareSheet`) · `lists` · `profile` (tab 4 + settings) ·
-`notifications` · `system` (offline, hidden *Design states* sheet).
+`notifications` · `badges` (unlock, all badges, detail, share; profile/friend widgets) · `legal` (Privacy policy, Terms of use; text in `legal_content.dart`) · `system` (offline, hidden *Design states* sheet).
 
 **Where does new code go?**
 - Used by one feature → `lib/features/<feature>/widgets/`.
@@ -160,8 +189,10 @@ The formatter and analyzer are the authority (`dart format`, page width **120**,
 **State.** Read with `context.app` in `build` (subscribes and rebuilds); use
 `context.appRead` in callbacks (no subscription). Anything the user can change
 lives in `AppState` and is changed through an `AppState` method that calls
-`notifyListeners()`. Widgets may read static demo content from `MockData`, but
-never keep their own copy of mutable app data.
+`notifyListeners()` and then writes through the `Backend` in the background.
+Screens never call Supabase or `MockData` for app data — only static demo
+content with no server equivalent yet (e.g. invite-only contacts) may come from
+`MockData`.
 
 ```dart
 // ✅
@@ -173,8 +204,8 @@ onPressed: () => context.app.toggleSaved(place.id),
 onPressed: () => MockData.visits.add(visit),
 ```
 
-When the backend arrives, `MockData` reads become repository calls behind
-`AppState` — keep that seam clean.
+New data = a field on `AppSnapshot`, a query in `SupabaseBackend.load`, the same
+in `MockBackend`, and a getter on `AppState`. Keep both backends in step.
 
 **Navigation.** Named routes only; pass ids (or the small `*Args` classes), not whole objects.
 
@@ -189,7 +220,8 @@ numbers through `Layout.y(context, designY)` or `SheetScaffold(sheetTop: …)` �
 never hand-tune offsets for one device. Scrolling content under the floating
 nav gets `Layout.navClearance` bottom padding.
 
-**Theme.** Colors only from `AppColors`/`AppGradients`, shadows from `AppShadows`,
+**Theme.** Follow `docs/DESIGN_SYSTEM.md` (four visual moves, copy rules, component
+specs). Colors only from `AppColors`/`AppGradients`, shadows from `AppShadows`,
 type only from `AppText`, icons from `AppIcon`. Headlines with a serif italic
 accent use `AccentTitle`.
 
@@ -272,7 +304,8 @@ feat(visit)!: rename tip to note        # ! marks a breaking change
 ```
 
 Types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci` `chore`
-`revert`. The scope is usually the feature folder (`map`, `feed`, `friends`,
+`revert`. No `Co-Authored-By:` trailers or other AI-tool attribution in
+commit messages — commits are authored by the person who pushes them. The scope is usually the feature folder (`map`, `feed`, `friends`,
 `auth`, `ui`, `state`, `deps`, `ci`). One logical change per commit.
 
 **What blocks you, and where:**
@@ -295,7 +328,33 @@ screenshots for UI changes, the checklist. Keep each PR to one feature or fix.
 
 ---
 
-## 8. Privacy & security (India DPDP Act + App Store rules)
+## 8. Database (Supabase)
+
+Full guide: `supabase/README.md`. Auth is **Supabase Auth** — never create user
+or password tables.
+
+- **`supabase/schemas/` is the source of truth.** Edit the schema files, never
+  the dashboard.
+- **One migration per change set.** After editing schemas, run
+  `make db-diff NAME=<what_changed>` (one file covering every related change),
+  review it, and commit both. Never one migration per table for one feature.
+  If existing rows need converting, hand-write the migration so no data is
+  lost. `make db-drift` must report no drift before you finish.
+- **Never edit a migration that has been applied anywhere.** Write a new one.
+- Every table: RLS on, explicit policies, explicit `grant`s to `authenticated`
+  (new tables are not auto-exposed). Security-definer helpers live in `private`.
+- Schema files hold no data (bucket rows, lookups, fixes) — those go only in
+  migrations.
+- New policy or function → a pgTAP check in `supabase/tests/database/`;
+  `make db-test` must pass. Data used by the app → keep `seed.sql` in step so
+  staging shows it.
+- `seed.sql` is demo data: local and staging only, never production.
+- The user applies migrations to hosted projects (`make db-push`). Ask before
+  running anything against a hosted project.
+- Local Docker: start only Clarity's containers (`make db-start`); never stop,
+  remove or prune other projects' containers, images or volumes.
+
+## 9. Privacy & security (India DPDP Act + App Store rules)
 
 - **Contacts:** match phone numbers against existing users and discard the
   rest. Never persist, log or upload non-users' numbers or names.
@@ -304,13 +363,15 @@ screenshots for UI changes, the checklist. Keep each PR to one feature or fix.
   after the in-app explainer screen. Never on launch.
 - Every new permission needs a clear `NS…UsageDescription` string in `Info.plist` (ask first).
 - No analytics or tracking SDKs without asking. No PII in logs or crash reports.
+- The app gets only public values (`config/<env>.json` → `Env`). `.env` holds tool
+  credentials incl. the service-role key — never in the app, git or logs.
 - Secrets never go in the repo. Client keys that must ship (e.g. the Maps SDK
   key) are restricted to bundle id `ai.thinkbyte.clarity` and come from build
   config, not source.
 
 ---
 
-## 9. Gotchas
+## 10. Gotchas
 
 - `flutter: command not found` → you forgot `export PATH="/opt/homebrew/bin:$PATH"`.
 - Hook scripts must stay bash 3.2 compatible (macOS `/bin/bash`): no `mapfile`,
@@ -327,7 +388,7 @@ screenshots for UI changes, the checklist. Keep each PR to one feature or fix.
 
 ---
 
-## 10. Naming
+## 11. Naming
 
 Working name **Clarity** (Dart package `clarity`, bundle id `ai.thinkbyte.clarity`).
 The final brand is still open ("something short that works as a verb") — don't

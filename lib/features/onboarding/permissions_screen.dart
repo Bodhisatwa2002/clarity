@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../../app/routes.dart';
@@ -7,7 +5,6 @@ import '../../core/icons/app_icons.dart';
 import '../../core/theme/app_theme.dart';
 import '../shared/widgets/buttons.dart';
 import '../shared/widgets/dashed_border.dart';
-import '../shared/widgets/glass.dart';
 import '../shared/widgets/layout.dart';
 import 'widgets/onboarding_widgets.dart';
 
@@ -40,7 +37,7 @@ class PermissionsScreen extends StatelessWidget {
             style: AppText.serif(36, italic: true, height: 1.05, color: AppColors.white),
           ),
           const SizedBox(height: 30),
-          const Center(child: _ContactsOrbit()),
+          const Center(child: _ContactMatchCard()),
           const SizedBox(height: 34),
           const _Benefit(icon: AppIcon.friends, text: 'See which contacts are on Clarity and open their maps.'),
           const SizedBox(height: 16),
@@ -71,137 +68,153 @@ class PermissionsScreen extends StatelessWidget {
   }
 }
 
-class _ContactsOrbit extends StatelessWidget {
-  const _ContactsOrbit();
+/// A glimpse of what contact sync does: your address book, with the people on
+/// Clarity picked out and everyone else left untouched ("not stored").
+class _ContactMatchCard extends StatelessWidget {
+  const _ContactMatchCard();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 260,
-      height: 230,
-      child: Stack(
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 320),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+      decoration: BoxDecoration(
+        color: AppColors.whiteA(0.16),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.whiteA(0.38)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Positioned.fill(child: CustomPaint(painter: _OrbitPainter())),
-          Positioned(
-            left: 70,
-            top: 55,
-            child: GlassOrb(
-              size: 120,
-              shadow: true,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 2,
-                children: [
-                  const AppIconView(AppIcon.contacts, size: 30, color: AppColors.white, strokeWidth: 1.7),
-                  Text(
-                    'Contacts',
-                    style: AppText.sans(12, weight: FontWeight.w700, color: AppColors.white),
-                  ),
-                ],
+          Row(
+            spacing: 8,
+            children: [
+              const AppIconView(AppIcon.contacts, size: 18, color: AppColors.white, strokeWidth: 1.8),
+              Expanded(
+                child: Text(
+                  'Your contacts',
+                  style: AppText.sans(13, weight: FontWeight.w700, color: AppColors.white),
+                ),
               ),
-            ),
+              Container(
+                height: 26,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(color: AppColors.ink, borderRadius: BorderRadius.circular(13)),
+                alignment: Alignment.center,
+                child: Text(
+                  '12 on Clarity',
+                  style: AppText.sans(12, weight: FontWeight.w700, color: AppColors.white),
+                ),
+              ),
+            ],
           ),
-          _bubble(left: 6, top: 70, size: 44, text: 'RS', bg: AppColors.white, fg: AppColors.blue, fontSize: 15),
-          _bubble(
-            left: 196,
-            top: 24,
-            size: 40,
-            text: 'AD',
-            bg: const Color(0xFFFFE3CC),
-            fg: AppColors.takenFg,
-            fontSize: 14,
+          const SizedBox(height: 8),
+          const _ContactRow(
+            initials: 'RS',
+            name: 'Rahul Sen',
+            detail: '18 places · 4 cities',
+            bg: AppColors.white,
+            fg: AppColors.blue,
           ),
-          _bubble(
-            left: 212,
-            top: 148,
-            size: 46,
-            text: 'PK',
+          _divider(),
+          const _ContactRow(
+            initials: 'PK',
+            name: 'Priya Kapoor',
+            detail: '11 places · 2 cities',
             bg: AppColors.successBg,
             fg: AppColors.success,
-            fontSize: 15,
           ),
-          Positioned(
-            left: 60,
-            top: 186,
-            child: Container(
-              height: 34,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(color: AppColors.ink, borderRadius: BorderRadius.circular(17)),
-              alignment: Alignment.center,
-              child: Text(
-                '12 contacts on Clarity',
-                style: AppText.sans(12, weight: FontWeight.w700, color: AppColors.white),
-              ),
-            ),
+          _divider(),
+          const _ContactRow(
+            initials: 'RP',
+            name: 'Ravi Plumber',
+            detail: 'Not on Clarity',
+            bg: AppColors.takenBg,
+            fg: AppColors.takenFg,
+            onClarity: false,
           ),
         ],
       ),
     );
   }
 
-  Widget _bubble({
-    required double left,
-    required double top,
-    required double size,
-    required String text,
-    required Color bg,
-    required Color fg,
-    required double fontSize,
-  }) {
-    return Positioned(
-      left: left,
-      top: top,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: bg, shape: BoxShape.circle, boxShadow: AppShadows.chip),
-        alignment: Alignment.center,
-        child: Text(
-          text,
-          style: AppText.sans(fontSize, weight: FontWeight.w800, color: fg),
-        ),
-      ),
-    );
-  }
+  Widget _divider() => Divider(height: 1, thickness: 1, color: AppColors.whiteA(0.22));
 }
 
-/// Dashed ellipse with a mint arc, rotated like the design's SVG.
-class _OrbitPainter extends CustomPainter {
-  const _OrbitPainter();
+class _ContactRow extends StatelessWidget {
+  const _ContactRow({
+    required this.initials,
+    required this.name,
+    required this.detail,
+    required this.bg,
+    required this.fg,
+    this.onClarity = true,
+  });
+
+  final String initials;
+  final String name;
+  final String detail;
+  final Color bg;
+  final Color fg;
+  final bool onClarity;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromCenter(center: const Offset(130, 115), width: 244, height: 208);
-    final dashed = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..color = AppColors.whiteA(0.45);
-    final oval = Path()..addOval(rect);
-    for (final m in oval.computeMetrics()) {
-      for (var d = 0.0; d < m.length; d += 10) {
-        canvas.drawPath(m.extractPath(d, d + 4), dashed);
-      }
-    }
-
-    canvas.save();
-    canvas.translate(130, 115);
-    canvas.rotate(-60 * math.pi / 180);
-    canvas.translate(-130, -115);
-    final arc = Path()..addOval(rect);
-    final metric = arc.computeMetrics().first;
-    canvas.drawPath(
-      metric.extractPath(0, 120),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round
-        ..color = AppColors.mint,
+  Widget build(BuildContext context) {
+    final row = SizedBox(
+      height: 54,
+      child: Row(
+        spacing: 12,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+            alignment: Alignment.center,
+            child: Text(
+              initials,
+              style: AppText.sans(13, weight: FontWeight.w800, color: fg),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 1,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.sans(15, weight: FontWeight.w700, color: AppColors.white),
+                ),
+                Text(detail, style: AppText.sans(12, color: AppColors.onBlueSoft)),
+              ],
+            ),
+          ),
+          if (onClarity)
+            Container(
+              width: 26,
+              height: 26,
+              decoration: const BoxDecoration(color: AppColors.mint, shape: BoxShape.circle),
+              alignment: Alignment.center,
+              child: const AppIconView(AppIcon.check, size: 14, color: AppColors.navy, strokeWidth: 2.4),
+            )
+          else
+            Row(
+              spacing: 4,
+              children: [
+                const AppIconView(AppIcon.lock, size: 13, color: AppColors.white, strokeWidth: 1.8),
+                Text(
+                  'Not stored',
+                  style: AppText.sans(12, weight: FontWeight.w600, color: AppColors.white),
+                ),
+              ],
+            ),
+        ],
+      ),
     );
-    canvas.restore();
+    return onClarity ? row : Opacity(opacity: 0.62, child: row);
   }
-
-  @override
-  bool shouldRepaint(_OrbitPainter oldDelegate) => false;
 }
 
 class _Benefit extends StatelessWidget {

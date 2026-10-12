@@ -181,7 +181,7 @@ class PlaceVisitCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: 4,
                   children: [
-                    CategoryLine(category: place.category, suffix: visit.status.label),
+                    CategoryLine(category: place.category, suffix: visit.statusLabel),
                     Text(place.name, style: AppText.placeName()),
                     Text(
                       '${place.area} · ${Fmt.monthYear(visit.date)} · ${visit.companionsLabel}',

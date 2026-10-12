@@ -42,7 +42,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _flip(String key) => setState(() => _toggles[key] = !_toggles[key]!);
 
-  void _signOut() => Navigator.pushNamedAndRemoveUntil(context, Routes.welcome, (_) => false);
+  Future<void> _signOut() async {
+    await context.appRead.signOut();
+    if (mounted) Navigator.pushNamedAndRemoveUntil(context, Routes.welcome, (_) => false);
+  }
+
+  Future<void> _deleteAccount() async {
+    final error = await context.appRead.deleteAccount();
+    if (!mounted) return;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    Navigator.pushNamedAndRemoveUntil(context, Routes.welcome, (_) => false);
+  }
 
   void _comingSoon(String what) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$what comes with the backend.')));
@@ -158,11 +171,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _Group(
                   children: [
                     _LinkRow(label: 'Download my data', onTap: () => _comingSoon('Data export'), chevron: false),
-                    _LinkRow(
-                      label: 'Privacy policy',
-                      onTap: () => _comingSoon('The privacy policy page'),
-                      chevron: false,
-                    ),
+                    _LinkRow(label: 'Privacy policy', onTap: () => Navigator.pushNamed(context, Routes.privacy)),
+                    _LinkRow(label: 'Terms of use', onTap: () => Navigator.pushNamed(context, Routes.terms)),
                     _LinkRow(label: 'Log out', onTap: _signOut, chevron: false),
                     _LinkRow(
                       label: 'Delete account',
@@ -174,7 +184,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
                 if (_confirmingDelete)
-                  _DeleteConfirm(onCancel: () => setState(() => _confirmingDelete = false), onDelete: _signOut),
+                  _DeleteConfirm(onCancel: () => setState(() => _confirmingDelete = false), onDelete: _deleteAccount),
                 GestureDetector(
                   onLongPress: () => showDesignStatesSheet(context),
                   child: Padding(

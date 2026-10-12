@@ -361,6 +361,155 @@ class ToggleTag extends StatelessWidget {
   }
 }
 
+/// "₹ [350] per person" with the ₹–₹₹₹₹ level worked out as you type.
+class BudgetField extends StatelessWidget {
+  const BudgetField({super.key, required this.controller, required this.level, required this.onChanged});
+
+  final TextEditingController controller;
+
+  /// "₹₹", or null while empty.
+  final String? level;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = AppText.sans(17, weight: FontWeight.w700, color: AppColors.navyInk);
+    return Container(
+      height: 54,
+      padding: const EdgeInsets.only(left: 18, right: 8),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.fieldBorder),
+      ),
+      child: Row(
+        children: [
+          Text('₹', style: style),
+          const SizedBox(width: 6),
+          Expanded(
+            child: BareTextField(
+              controller: controller,
+              hint: '350',
+              keyboardType: TextInputType.number,
+              maxLength: 7,
+              onChanged: (value) {
+                final digits = value.replaceAll(RegExp(r'\D'), '');
+                if (digits != value) {
+                  controller.value = TextEditingValue(
+                    text: digits,
+                    selection: TextSelection.collapsed(offset: digits.length),
+                  );
+                }
+                onChanged();
+              },
+              style: style,
+            ),
+          ),
+          Text('per person', style: AppText.meta(size: 13)),
+          const SizedBox(width: 8),
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 160),
+            opacity: level == null ? 0 : 1,
+            child: Container(
+              height: 38,
+              constraints: const BoxConstraints(minWidth: 56),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: AppColors.tintStrong, borderRadius: BorderRadius.circular(19)),
+              child: Text(
+                level ?? '',
+                style: AppText.sans(14, weight: FontWeight.w800, color: AppColors.navy),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A dashed "+ Add your own" chip that turns into a one-line field.
+/// Submitting adds the tag and goes back to the chip.
+class CustomTagInput extends StatefulWidget {
+  const CustomTagInput({super.key, required this.onAdd, required this.maxLength, this.enabled = true});
+
+  final ValueChanged<String> onAdd;
+  final int maxLength;
+
+  /// False once the visit has the maximum number of tags.
+  final bool enabled;
+
+  @override
+  State<CustomTagInput> createState() => _CustomTagInputState();
+}
+
+class _CustomTagInputState extends State<CustomTagInput> {
+  final _controller = TextEditingController();
+  final _focus = FocusNode();
+  bool _editing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() {
+      if (!_focus.hasFocus) _submit();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final tag = _controller.text.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (tag.isNotEmpty) widget.onAdd(tag);
+    _controller.clear();
+    if (mounted) setState(() => _editing = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_editing) {
+      return Opacity(
+        opacity: widget.enabled ? 1 : 0.4,
+        child: ToggleTag(
+          label: '+ Add your own',
+          selected: false,
+          onTap: widget.enabled
+              ? () {
+                  setState(() => _editing = true);
+                  _focus.requestFocus();
+                }
+              : () {},
+        ),
+      );
+    }
+    return DashedBorder(
+      color: AppColors.ink,
+      child: Container(
+        height: 38,
+        width: 200,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(19)),
+        alignment: Alignment.centerLeft,
+        child: BareTextField(
+          controller: _controller,
+          focusNode: _focus,
+          hint: 'e.g. Peacocks on the lawn',
+          maxLength: widget.maxLength,
+          textInputAction: TextInputAction.done,
+          textCapitalization: TextCapitalization.sentences,
+          onSubmitted: (_) => _focus.unfocus(),
+          style: AppText.serif(16, color: AppColors.text),
+        ),
+      ),
+    );
+  }
+}
+
 /// Bottom sheet listing categories.
 class CategoryPickerSheet extends StatelessWidget {
   const CategoryPickerSheet({super.key, required this.selected});
@@ -386,29 +535,39 @@ class CategoryPickerSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Text('Category', style: AppText.sans(22, weight: FontWeight.w700, letterSpacing: -0.4)),
             const SizedBox(height: 8),
-            for (final c in PlaceCategory.values)
-              Pressable(
-                onTap: () => Navigator.pop(context, c),
-                child: Container(
-                  height: 52,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: c == selected ? AppColors.selectedRow : null,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    spacing: 10,
-                    children: [
-                      Dot(color: c.color, size: 10),
-                      Expanded(
-                        child: Text(c.label, style: AppText.sans(15, weight: FontWeight.w600)),
+            // Scrolls on short screens instead of overflowing.
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final c in PlaceCategory.values)
+                      Pressable(
+                        onTap: () => Navigator.pop(context, c),
+                        child: Container(
+                          height: 52,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: c == selected ? AppColors.selectedRow : null,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            spacing: 10,
+                            children: [
+                              Dot(color: c.color, size: 10),
+                              Expanded(
+                                child: Text(c.label, style: AppText.sans(15, weight: FontWeight.w600)),
+                              ),
+                              if (c == selected)
+                                const AppIconView(AppIcon.check, size: 18, color: AppColors.blue, strokeWidth: 2.4),
+                            ],
+                          ),
+                        ),
                       ),
-                      if (c == selected)
-                        const AppIconView(AppIcon.check, size: 18, color: AppColors.blue, strokeWidth: 2.4),
-                    ],
-                  ),
+                  ],
                 ),
               ),
+            ),
           ],
         ),
       ),

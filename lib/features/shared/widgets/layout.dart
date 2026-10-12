@@ -82,7 +82,7 @@ class SkyScaffold extends StatelessWidget {
     required this.child,
     this.gradient = AppGradients.sky,
     this.padding = const EdgeInsets.fromLTRB(22, 0, 22, 40),
-    this.resizeToAvoidBottomInset = false,
+    this.resizeToAvoidBottomInset = true,
     this.scrollable = true,
   });
 
@@ -92,6 +92,9 @@ class SkyScaffold extends StatelessWidget {
 
   /// Top padding is added on top of the device's header inset.
   final EdgeInsets padding;
+
+  /// Shrinks the page above the keyboard so actions pinned to the bottom
+  /// (Send code, Verify) stay visible while typing.
   final bool resizeToAvoidBottomInset;
 
   /// Lets the page scroll when it doesn't fit (small phones, big text).
@@ -105,24 +108,30 @@ class SkyScaffold extends StatelessWidget {
       child: Scaffold(
         backgroundColor: AppColors.blue,
         resizeToAvoidBottomInset: resizeToAvoidBottomInset,
-        body: DecoratedBox(
-          decoration: BoxDecoration(gradient: gradient),
-          child: scrollable
-              ? CustomScrollView(
-                  slivers: [
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Padding(
-                        padding: padding.copyWith(top: padding.top + Layout.top(context)),
-                        child: child,
+        // Tapping outside a field closes the keyboard — the iOS number pad
+        // has no Done key of its own.
+        body: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: DecoratedBox(
+            decoration: BoxDecoration(gradient: gradient),
+            child: scrollable
+                ? CustomScrollView(
+                    slivers: [
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Padding(
+                          padding: padding.copyWith(top: padding.top + Layout.top(context)),
+                          child: child,
+                        ),
                       ),
-                    ),
-                  ],
-                )
-              : Padding(
-                  padding: padding.copyWith(top: padding.top + Layout.top(context)),
-                  child: child,
-                ),
+                    ],
+                  )
+                : Padding(
+                    padding: padding.copyWith(top: padding.top + Layout.top(context)),
+                    child: child,
+                  ),
+          ),
         ),
       ),
     );

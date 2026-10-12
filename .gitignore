@@ -46,3 +46,12 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Secrets and per-environment config — never commit.
+# Committed templates: .env.example, config/example.json
+.env
+.env.*
+!.env.example
+config/*.json
+!config/example.json
+ios/Flutter/Secrets.xcconfig

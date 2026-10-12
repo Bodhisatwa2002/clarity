@@ -31,15 +31,6 @@ class _SearchScreenState extends State<SearchScreen> {
   _Scope _scope = _Scope.all;
 
   /// Extra words that make "ask anything" queries find the right places.
-  static const _keywords = {
-    'neermahal': 'palace lake viewpoint sunset melaghar',
-    'dzukou': 'dzukou valley trek nagaland',
-    'lakeside-cafe': 'cafe café quiet coffee reading agartala work',
-    'momo': 'momo food agartala cheap',
-    'ward-lake': 'ward lake shillong viewpoint',
-    'ujjayanta': 'palace museum agartala',
-  };
-
   @override
   void dispose() {
     _query.dispose();
@@ -60,10 +51,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
     final people = q.isEmpty
         ? <Person>[]
-        : [...state.friends, MockData.rahulDey].where((p) => hit(p.name.toLowerCase())).toList();
-    final places = q.isEmpty
-        ? <Place>[]
-        : _keywords.keys.map(state.place).where((p) => hit('${p.name.toLowerCase()} ${_keywords[p.id]}')).toList();
+        : [...state.friends, ...state.suggestedPeople].where((p) => hit(p.name.toLowerCase())).toList();
+    final places = state.searchPlaces(q).take(6).toList();
     final showPeople = _scope != _Scope.places && people.isNotEmpty;
     final showPlaces = _scope != _Scope.people && places.isNotEmpty;
 

@@ -73,6 +73,12 @@ abstract final class AppColors {
   static const Color takenFg = Color(0xFF9A3412);
   static const Color takenBg = Color(0xFFFDE7DF);
 
+  // Badges (design board 26)
+  static const Color badgeRingIdle = Color(0xFFC9D1DC);
+  static const Color badgeTrack = Color(0xFFE3E8EF);
+  static const Color badgeDiscIdle = Color(0xFFE6EBF2);
+  static const Color badgeLockedStroke = Color(0xFFAEB8C6);
+
   // Overlays
   static const Color scrim = Color(0x80081228); // rgba(8,18,40,0.5)
   static const Color shadow = Color(0xFF10264D);

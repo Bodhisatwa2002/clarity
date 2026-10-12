@@ -17,7 +17,7 @@ class YourReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tags = [if (visit.tags.isNotEmpty) visit.tags.first, ?visit.budget, ...visit.tags.skip(1)];
+    final tags = [if (visit.tags.isNotEmpty) visit.tags.first, ?visit.budgetLabel, ...visit.tags.skip(1)];
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(24)),

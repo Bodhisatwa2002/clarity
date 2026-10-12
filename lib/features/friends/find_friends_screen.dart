@@ -63,9 +63,9 @@ class _FindFriendsScreenState extends State<FindFriendsScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.app;
-    final onClarity = MockData.contactsOnClarity.map(state.person).where((p) => _matches(p.name)).toList();
+    final onClarity = state.contactsOnClarity.map(state.person).where((p) => _matches(p.name)).toList();
     final invites = MockData.contactsToInvite.where((c) => _matches(c.name)).toList();
-    final requested = MockData.contactsOnClarity.where(state.isRequested).length;
+    final requested = state.contactsOnClarity.where(state.isRequested).length;
 
     return SheetScaffold(
       sheetTop: 248,
@@ -98,7 +98,7 @@ class _FindFriendsScreenState extends State<FindFriendsScreen> {
                     size: 80,
                     strength: 0.92,
                     child: Text(
-                      '${MockData.matchedContacts}',
+                      '${state.isRemote ? state.contactsOnClarity.length : MockData.matchedContacts}',
                       style: AppText.sans(34, weight: FontWeight.w800, letterSpacing: -1, color: AppColors.white),
                     ),
                   ),
@@ -152,7 +152,7 @@ class _FindFriendsScreenState extends State<FindFriendsScreen> {
                   fontWeight: FontWeight.w800,
                   color: AppColors.blue,
                   onPressed: () {
-                    for (final p in MockData.contactsOnClarity) {
+                    for (final p in state.contactsOnClarity) {
                       if (!state.isFriend(p) && !state.isRequested(p)) state.toggleRequest(p);
                     }
                   },

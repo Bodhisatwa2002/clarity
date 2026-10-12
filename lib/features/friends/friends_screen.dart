@@ -5,6 +5,7 @@ import '../../core/icons/app_icons.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/layout.dart';
+import '../badges/badge_moments.dart';
 import '../shared/widgets/buttons.dart';
 import '../shared/widgets/content.dart';
 import '../shared/widgets/controls.dart';
@@ -95,7 +96,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   List<Widget> _requests(BuildContext context, AppState state) => [
     for (final r in state.requests) ...[
-      RequestCard(person: r, onAccept: () => state.acceptRequest(r.id), onDecline: () => state.declineRequest(r.id)),
+      RequestCard(
+        person: r,
+        onAccept: () {
+          state.acceptRequest(r.id);
+          BadgeMoments.celebrate(Navigator.of(context), state);
+        },
+        onDecline: () => state.declineRequest(r.id),
+      ),
       const SizedBox(height: 8),
     ],
     if (state.requests.isEmpty) ...[

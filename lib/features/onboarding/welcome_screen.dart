@@ -52,10 +52,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     SizedBox(height: Layout.y(context, 124)),
                     _Brand(),
                     const SizedBox(height: 26),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      child: _Headline(key: ValueKey(_index), slide: slide),
-                    ),
+                    _Headlines(index: _index),
                     const SizedBox(height: 52),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 250),
@@ -109,8 +106,38 @@ class _Brand extends StatelessWidget {
   }
 }
 
+/// All three headlines laid out on top of each other, so the block is always as
+/// tall as the tallest one ("from your contacts." wraps to two lines) and the
+/// chips, dots and buttons below stay put when the slide changes.
+class _Headlines extends StatelessWidget {
+  const _Headlines({required this.index});
+
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.topCenter,
+      children: [
+        for (var i = 0; i < _slides.length; i++)
+          IgnorePointer(
+            ignoring: i != index,
+            child: ExcludeSemantics(
+              excluding: i != index,
+              child: AnimatedOpacity(
+                opacity: i == index ? 1 : 0,
+                duration: const Duration(milliseconds: 250),
+                child: _Headline(slide: _slides[i]),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _Headline extends StatelessWidget {
-  const _Headline({super.key, required this.slide});
+  const _Headline({required this.slide});
 
   final _Slide slide;
 

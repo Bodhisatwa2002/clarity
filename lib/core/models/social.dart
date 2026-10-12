@@ -1,7 +1,7 @@
 import 'place_category.dart';
 
 /// The three shapes a friends-feed card can take.
-enum FeedPostType { visit, ask, list }
+enum FeedPostType { visit, ask, list, badge }
 
 class FeedPost {
   const FeedPost({
@@ -17,6 +17,7 @@ class FeedPost {
     this.category,
     this.rating,
     this.footnote,
+    this.badgeId,
   });
 
   final String id;
@@ -37,6 +38,19 @@ class FeedPost {
 
   /// "4 friends replied with pins" / "9 places · 4 friends".
   final String? footnote;
+
+  /// For [FeedPostType.badge]: which badge ("trekker"). [likes] are Congrats.
+  final String? badgeId;
+}
+
+/// "Thanks, went there!" on someone's review (`public.visit_thanks`).
+class VisitThanks {
+  const VisitThanks({required this.visitId, required this.profileId});
+
+  final String visitId;
+
+  /// Who went because of the review.
+  final String profileId;
 }
 
 enum NotificationKind { joined, friendRequest, liked, thanks, nudge, listInvite }
@@ -75,10 +89,14 @@ class CollabList {
     required this.planning,
     required this.memberIds,
     required this.items,
+    this.ownerId,
   });
 
   final String id;
   final String title;
+
+  /// Who made it (for the List maker badge).
+  final String? ownerId;
 
   /// "planning for Jan 2027".
   final String planning;

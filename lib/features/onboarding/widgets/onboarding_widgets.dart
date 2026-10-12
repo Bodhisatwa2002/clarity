@@ -5,12 +5,14 @@ import '../../../core/theme/app_theme.dart';
 import '../../shared/widgets/glass.dart';
 import '../../shared/widgets/layout.dart';
 
-/// Back button + "Step n of 3" used across the sign-up steps.
+/// Back button + "Sign up · Step n of 3" across the sign-up steps, or "Log in"
+/// when an existing user is signing back in (no steps to count).
 class StepHeader extends StatelessWidget {
-  const StepHeader({super.key, required this.step, this.total = 3});
+  const StepHeader({super.key, required this.step, this.total = 3, this.signUp = true});
 
   final int step;
   final int total;
+  final bool signUp;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +24,7 @@ class StepHeader extends StatelessWidget {
         onPressed: () => Navigator.maybePop(context),
       ),
       center: Text(
-        'Step $step of $total',
+        signUp ? 'Sign up · Step $step of $total' : 'Log in',
         style: AppText.sans(13, weight: FontWeight.w600, color: AppColors.white),
       ),
     );
@@ -55,7 +57,7 @@ class StepIntro extends StatelessWidget {
   }
 }
 
-/// Plain bold step title ("What's your number?").
+/// Plain bold step title ("Create your account").
 class StepTitle extends StatelessWidget {
   const StepTitle(this.text, {super.key});
 

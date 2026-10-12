@@ -4,8 +4,8 @@ import '../../../app/routes.dart';
 import '../../../core/icons/app_icons.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../badges/widgets/get_started_card.dart';
 import '../../shared/widgets/buttons.dart';
-import '../../shared/widgets/chips.dart';
 import '../../shared/widgets/dashed_border.dart';
 import '../../shared/widgets/layout.dart';
 import '../../shared/widgets/map_art.dart';
@@ -88,21 +88,7 @@ class EmptyMapView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final idea in const ['Last café you went to', "A trek you'd redo"])
-                    TagChip(
-                      label: idea,
-                      serif: true,
-                      height: 36,
-                      fontSize: 13,
-                      onTap: () => Navigator.pushNamed(context, Routes.addPlace),
-                    ),
-                ],
-              ),
+              const GetStartedStrip(),
             ],
           ),
         ),

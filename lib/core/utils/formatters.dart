@@ -16,6 +16,17 @@ abstract final class Fmt {
     return monthYear(d);
   }
 
+  /// Short age for feed cards and notifications: "10m", "2h", "Yesterday",
+  /// "3d", then "Aug 2026".
+  static String ago(DateTime d, {DateTime? now}) {
+    final diff = (now ?? DateTime.now()).difference(d);
+    if (diff.inMinutes < 60) return '${diff.inMinutes.clamp(1, 59)}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    if (diff.inHours < 48) return 'Yesterday';
+    if (diff.inDays < 7) return '${diff.inDays}d';
+    return monthYear(d);
+  }
+
   /// One decimal, the way ratings are shown everywhere ("4.5").
   static String rating(double r) => r.toStringAsFixed(1);
 
